@@ -62,6 +62,7 @@ pub use core::str::{RSplit, Split};
 pub use core::str::{RSplitN, SplitN};
 pub use core::str::{RSplitTerminator, SplitTerminator};
 use proc_macro::TokenStream;
+use std::fmt::Write;
 
 use crate::u32_string::U32String;
 
@@ -72,13 +73,8 @@ impl<S: Borrow<u32str>> Concat<u32str> for [S] {
     type Output = U32String;
 
     fn concat(slice: &Self) -> U32String {
-        let data: [char; 0] = [];
-        Join::join(
-            slice,
-            &u32str {
-                data: data as [char],
-            },
-        )
+        let sep = unsafe { &*(&[] as *const [char] as *const u32str) };
+        Join::join(slice, sep)
     }
 }
 
@@ -942,9 +938,37 @@ impl u32str {
     // }
 }
 
+impl AsRef<[char]> for u32str {
+    #[inline]
+    fn as_ref(&self) -> &[char] {
+        &self.data
+    }
+}
+
+impl const Default for &u32str {
+    /// Creates an empty str
+    #[inline]
+    fn default() -> Self {
+        unsafe { &*(&[] as *const [char] as *const u32str) }
+    }
+}
+
+// TODO: Implement this
+// impl Default for &mut u32str {
+//     /// Creates an empty mutable str
+//     #[inline]
+//     fn default() -> Self {
+//         // SAFETY: The empty string is valid UTF-8.
+//         unsafe { from_utf8_unchecked_mut(&mut []) }
+//         unsafe {
+//             &mut *(&mut [] as *mut [char] as *mut u32str)
+//         }
+//     }
+// }
+
 impl Ord for u32str {
     #[inline]
-    fn cmp(&self, other: &u32str) -> std::cmd::Ordering {
+    fn cmp(&self, other: &u32str) -> std::cmp::Ordering {
         self.data.cmp(&other.data)
     }
 }
@@ -973,6 +997,18 @@ impl PartialOrd for u32str {
     #[inline]
     fn partial_cmp(&self, other: &u32str) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl std::fmt::Debug for u32str {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", &String::from_iter(self.data.iter()))
+    }
+}
+
+impl std::fmt::Display for u32str {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.pad(&String::from_iter(self.data.iter()))
     }
 }
 
