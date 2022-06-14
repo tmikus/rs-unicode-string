@@ -1936,8 +1936,8 @@ impl FromIterator<U32String> for U32String {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl FromIterator<Box<str>> for U32String {
-    fn from_iter<I: IntoIterator<Item = Box<str>>>(iter: I) -> U32String {
+impl FromIterator<Box<u32str>> for U32String {
+    fn from_iter<I: IntoIterator<Item = Box<u32str>>>(iter: I) -> U32String {
         let mut buf = U32String::new();
         buf.extend(iter);
         buf
@@ -2440,7 +2440,7 @@ impl ToU32String for i8 {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl ToU32String for str {
+impl ToU32String for u32str {
     #[inline]
     fn to_string(&self) -> U32String {
         U32String::from(self)
@@ -2478,10 +2478,10 @@ impl AsMut<u32str> for U32String {
     }
 }
 
-impl AsRef<[u8]> for U32String {
+impl AsRef<[char]> for U32String {
     #[inline]
-    fn as_ref(&self) -> &[u8] {
-        self.as_bytes()
+    fn as_ref(&self) -> &[char] {
+        &self.vec
     }
 }
 
