@@ -290,7 +290,7 @@ use std::vec::Vec;
 #[derive(PartialOrd, Eq, Ord)]
 #[cfg_attr(not(test), rustc_diagnostic_item = "U32String")]
 pub struct U32String {
-    vec: Vec<char>,
+    pub(crate) vec: Vec<char>,
 }
 
 /// A possible error value when converting a `U32String` from a UTF-8 byte vector.
@@ -421,6 +421,10 @@ impl U32String {
         U32String {
             vec: Vec::with_capacity(capacity),
         }
+    }
+
+    pub fn from_chars(chars: Vec<char>) -> U32String {
+        U32String { vec: chars }
     }
 
     // HACK(japaric): with cfg(test) the inherent `[T]::to_vec` method, which is

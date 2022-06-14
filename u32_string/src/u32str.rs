@@ -83,7 +83,7 @@ impl<S: Borrow<u32str>> Join<&u32str> for [S] {
     type Output = U32String;
 
     fn join(slice: &Self, sep: &u32str) -> U32String {
-        unsafe { U32String::from_utf8_unchecked(join_generic_copy(slice, sep.as_bytes())) }
+        unsafe { U32String::from_chars(join_generic_copy(slice, sep.as_bytes())) }
     }
 }
 
@@ -116,7 +116,8 @@ impl ops::Index<ops::RangeFull> for u32str {
 
     #[inline]
     fn index(&self, _index: ops::RangeFull) -> &u32str {
-        unsafe { u32str::from_utf8_unchecked(&self.vec) }
+        unsafe { u32str::from_char_unchecked(&self.data) }
+        // unsafe { u32str::from_utf8_unchecked(&self.data) }
     }
 }
 impl ops::Index<ops::RangeInclusive<usize>> for u32str {
@@ -157,7 +158,8 @@ impl ops::IndexMut<ops::RangeFrom<usize>> for u32str {
 impl ops::IndexMut<ops::RangeFull> for u32str {
     #[inline]
     fn index_mut(&mut self, _index: ops::RangeFull) -> &mut u32str {
-        unsafe { u32str::from_utf8_unchecked_mut(&mut *self.vec) }
+        unsafe { u32str::from_char_unchecked_mut(&mut *self.data) }
+        // unsafe { u32str::from_utf8_unchecked_mut(&mut *self.data) }
     }
 }
 impl ops::IndexMut<ops::RangeInclusive<usize>> for u32str {
@@ -306,13 +308,19 @@ impl ToOwned for u32str {
 
     #[inline]
     fn to_owned(&self) -> U32String {
-        unsafe { U32String::from_utf8_unchecked(self.as_bytes().to_owned()) }
+        // TODO: Improve this...
+        U32String {
+            vec: self.data.to_vec(),
+        }
+        // unsafe { U32String::from_utf8_unchecked(self.as_bytes().to_owned()) }
     }
 
     fn clone_into(&self, target: &mut U32String) {
-        let mut b = mem::take(target).into_bytes();
-        self.as_bytes().clone_into(&mut b);
-        *target = unsafe { U32String::from_utf8_unchecked(b) }
+        // TODO: Check if this work...
+        target.vec = self.data.to_vec()
+        // let mut b = mem::take(target).into_bytes();
+        // self.as_bytes().clone_into(&mut b);
+        // *target = unsafe { U32String::from_utf8_unchecked(b) }
     }
 }
 
