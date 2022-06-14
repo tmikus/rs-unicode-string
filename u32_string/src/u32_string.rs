@@ -53,7 +53,7 @@ use core::ops::Add;
 use core::ops::AddAssign;
 #[cfg(not(no_global_oom_handling))]
 use core::ops::Bound::{Excluded, Included, Unbounded};
-use core::ops::{self, Index, IndexMut, Range, RangeBounds};
+use core::ops::{self, Range, RangeBounds};
 use core::ptr;
 use core::slice;
 #[cfg(not(no_global_oom_handling))]
@@ -504,86 +504,86 @@ impl U32String {
         }
     }
 
-    /// Converts a slice of bytes to a string, including invalid characters.
-    ///
-    /// U32Strings are made of bytes ([`u8`]), and a slice of bytes
-    /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
-    /// between the two. Not all byte slices are valid strings, however: strings
-    /// are required to be valid UTF-8. During this conversion,
-    /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
-    /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
-    ///
-    /// [byteslice]: prim@slice
-    /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
-    ///
-    /// If you are sure that the byte slice is valid UTF-8, and you don't want
-    /// to incur the overhead of the conversion, there is an unsafe version
-    /// of this function, [`from_utf8_unchecked`], which has the same behavior
-    /// but skips the checks.
-    ///
-    /// [`from_utf8_unchecked`]: U32String::from_utf8_unchecked
-    ///
-    /// This function returns a [`Cow<'a, u32str>`]. If our byte slice is invalid
-    /// UTF-8, then we need to insert the replacement characters, which will
-    /// change the size of the string, and hence, require a `U32String`. But if
-    /// it's already valid UTF-8, we don't need a new allocation. This return
-    /// type allows us to handle both cases.
-    ///
-    /// [`Cow<'a, u32str>`]: crate::borrow::Cow "borrow::Cow"
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// // some bytes, in a vector
-    /// let sparkle_heart = vec![240, 159, 146, 150];
-    ///
-    /// let sparkle_heart = U32String::from_utf8_lossy(&sparkle_heart);
-    ///
-    /// assert_eq!("💖", sparkle_heart);
-    /// ```
-    ///
-    /// Incorrect bytes:
-    ///
-    /// ```
-    /// // some invalid bytes
-    /// let input = b"Hello \xF0\x90\x80World";
-    /// let output = U32String::from_utf8_lossy(input);
-    ///
-    /// assert_eq!("Hello �World", output);
-    /// ```
-    #[must_use]
-    #[cfg(not(no_global_oom_handling))]
-    pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, u32str> {
-        let mut iter = lossy::Utf8Lossy::from_bytes(v).chunks();
-
-        let first_valid = if let Some(chunk) = iter.next() {
-            let lossy::Utf8LossyChunk { valid, broken } = chunk;
-            if broken.is_empty() {
-                debug_assert_eq!(valid.len(), v.len());
-                return Cow::Borrowed(valid);
-            }
-            valid
-        } else {
-            return Cow::Borrowed("");
-        };
-
-        const REPLACEMENT: &str = "\u{FFFD}";
-
-        let mut res = U32String::with_capacity(v.len());
-        res.push_str(first_valid);
-        res.push_str(REPLACEMENT);
-
-        for lossy::Utf8LossyChunk { valid, broken } in iter {
-            res.push_str(valid);
-            if !broken.is_empty() {
-                res.push_str(REPLACEMENT);
-            }
-        }
-
-        Cow::Owned(res)
-    }
+    // /// Converts a slice of bytes to a string, including invalid characters.
+    // ///
+    // /// U32Strings are made of bytes ([`u8`]), and a slice of bytes
+    // /// ([`&[u8]`][byteslice]) is made of bytes, so this function converts
+    // /// between the two. Not all byte slices are valid strings, however: strings
+    // /// are required to be valid UTF-8. During this conversion,
+    // /// `from_utf8_lossy()` will replace any invalid UTF-8 sequences with
+    // /// [`U+FFFD REPLACEMENT CHARACTER`][U+FFFD], which looks like this: �
+    // ///
+    // /// [byteslice]: prim@slice
+    // /// [U+FFFD]: core::char::REPLACEMENT_CHARACTER
+    // ///
+    // /// If you are sure that the byte slice is valid UTF-8, and you don't want
+    // /// to incur the overhead of the conversion, there is an unsafe version
+    // /// of this function, [`from_utf8_unchecked`], which has the same behavior
+    // /// but skips the checks.
+    // ///
+    // /// [`from_utf8_unchecked`]: U32String::from_utf8_unchecked
+    // ///
+    // /// This function returns a [`Cow<'a, u32str>`]. If our byte slice is invalid
+    // /// UTF-8, then we need to insert the replacement characters, which will
+    // /// change the size of the string, and hence, require a `U32String`. But if
+    // /// it's already valid UTF-8, we don't need a new allocation. This return
+    // /// type allows us to handle both cases.
+    // ///
+    // /// [`Cow<'a, u32str>`]: crate::borrow::Cow "borrow::Cow"
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// // some bytes, in a vector
+    // /// let sparkle_heart = vec![240, 159, 146, 150];
+    // ///
+    // /// let sparkle_heart = U32String::from_utf8_lossy(&sparkle_heart);
+    // ///
+    // /// assert_eq!("💖", sparkle_heart);
+    // /// ```
+    // ///
+    // /// Incorrect bytes:
+    // ///
+    // /// ```
+    // /// // some invalid bytes
+    // /// let input = b"Hello \xF0\x90\x80World";
+    // /// let output = U32String::from_utf8_lossy(input);
+    // ///
+    // /// assert_eq!("Hello �World", output);
+    // /// ```
+    // #[must_use]
+    // #[cfg(not(no_global_oom_handling))]
+    // pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, u32str> {
+    //     let mut iter = lossy::Utf8Lossy::from_bytes(v).chunks();
+    //
+    //     let first_valid = if let Some(chunk) = iter.next() {
+    //         let lossy::Utf8LossyChunk { valid, broken } = chunk;
+    //         if broken.is_empty() {
+    //             debug_assert_eq!(valid.len(), v.len());
+    //             return Cow::Borrowed(valid);
+    //         }
+    //         valid
+    //     } else {
+    //         return Cow::Borrowed("");
+    //     };
+    //
+    //     const REPLACEMENT: &str = "\u{FFFD}";
+    //
+    //     let mut res = U32String::with_capacity(v.len());
+    //     res.push_str(first_valid);
+    //     res.push_str(REPLACEMENT);
+    //
+    //     for lossy::Utf8LossyChunk { valid, broken } in iter {
+    //         res.push_str(valid);
+    //         if !broken.is_empty() {
+    //             res.push_str(REPLACEMENT);
+    //         }
+    //     }
+    //
+    //     Cow::Owned(res)
+    // }
 
     /// Decode a UTF-16–encoded vector `v` into a `U32String`, returning [`Err`]
     /// if `v` contains any invalid data.
@@ -729,7 +729,7 @@ impl U32String {
     /// }
     /// ```
     #[inline]
-    pub unsafe fn from_raw_parts(buf: *mut u8, length: usize, capacity: usize) -> U32String {
+    pub unsafe fn from_raw_parts(buf: *mut char, length: usize, capacity: usize) -> U32String {
         unsafe {
             U32String {
                 vec: Vec::from_raw_parts(buf, length, capacity),
@@ -737,59 +737,59 @@ impl U32String {
         }
     }
 
-    /// Converts a vector of bytes to a `U32String` without checking that the
-    /// string contains valid UTF-8.
-    ///
-    /// See the safe version, [`from_utf8`], for more details.
-    ///
-    /// [`from_utf8`]: U32String::from_utf8
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it does not check that the bytes passed
-    /// to it are valid UTF-8. If this constraint is violated, it may cause
-    /// memory unsafety issues with future users of the `U32String`, as the rest of
-    /// the standard library assumes that `U32String`s are valid UTF-8.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// // some bytes, in a vector
-    /// let sparkle_heart = vec![240, 159, 146, 150];
-    ///
-    /// let sparkle_heart = unsafe {
-    ///     U32String::from_utf8_unchecked(sparkle_heart)
-    /// };
-    ///
-    /// assert_eq!("💖", sparkle_heart);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> U32String {
-        U32String { vec: bytes }
-    }
+    // /// Converts a vector of bytes to a `U32String` without checking that the
+    // /// string contains valid UTF-8.
+    // ///
+    // /// See the safe version, [`from_utf8`], for more details.
+    // ///
+    // /// [`from_utf8`]: U32String::from_utf8
+    // ///
+    // /// # Safety
+    // ///
+    // /// This function is unsafe because it does not check that the bytes passed
+    // /// to it are valid UTF-8. If this constraint is violated, it may cause
+    // /// memory unsafety issues with future users of the `U32String`, as the rest of
+    // /// the standard library assumes that `U32String`s are valid UTF-8.
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// // some bytes, in a vector
+    // /// let sparkle_heart = vec![240, 159, 146, 150];
+    // ///
+    // /// let sparkle_heart = unsafe {
+    // ///     U32String::from_utf8_unchecked(sparkle_heart)
+    // /// };
+    // ///
+    // /// assert_eq!("💖", sparkle_heart);
+    // /// ```
+    // #[inline]
+    // #[must_use]
+    // pub unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> U32String {
+    //     U32String { vec: bytes }
+    // }
 
-    /// Converts a `U32String` into a byte vector.
-    ///
-    /// This consumes the `U32String`, so we do not need to copy its contents.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let s = U32String::from("hello");
-    /// let bytes = s.into_bytes();
-    ///
-    /// assert_eq!(&[104, 101, 108, 108, 111][..], &bytes[..]);
-    /// ```
-    #[inline]
-    #[must_use = "`self` will be dropped if the result is not used"]
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.vec
-    }
+    // /// Converts a `U32String` into a byte vector.
+    // ///
+    // /// This consumes the `U32String`, so we do not need to copy its contents.
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// let s = U32String::from("hello");
+    // /// let bytes = s.into_bytes();
+    // ///
+    // /// assert_eq!(&[104, 101, 108, 108, 111][..], &bytes[..]);
+    // /// ```
+    // #[inline]
+    // #[must_use = "`self` will be dropped if the result is not used"]
+    // pub fn into_bytes(self) -> Vec<u8> {
+    //     self.vec
+    // }
 
     /// Extracts a string slice containing the entire `U32String`.
     ///
@@ -804,9 +804,11 @@ impl U32String {
     /// ```
     #[inline]
     #[must_use]
-    pub fn as_str(&self) -> &u32str {
+    pub fn as_u32str(&self) -> &u32str {
         self
     }
+
+    // TODO: Add as_str()
 
     /// Converts a `U32String` into a mutable string slice.
     ///
@@ -824,9 +826,11 @@ impl U32String {
     /// ```
     #[inline]
     #[must_use]
-    pub fn as_mut_str(&mut self) -> &mut str {
+    pub fn as_mut_u32str(&mut self) -> &mut u32str {
         self
     }
+
+    // TODO: Add as_mut_str()
 
     /// Appends a given string slice onto the end of this `U32String`.
     ///
@@ -844,7 +848,28 @@ impl U32String {
     #[cfg(not(no_global_oom_handling))]
     #[inline]
     pub fn push_str(&mut self, string: &str) {
-        self.vec.extend_from_slice(string.as_bytes())
+        // TODO: Speed this up...
+        let chars = string.chars().collect::<Vec<char>>();
+        self.vec.extend_from_slice(&chars)
+    }
+
+    /// Appends a given string slice onto the end of this `U32String`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// let mut s = U32String::from("foo");
+    ///
+    /// s.push_str("bar");
+    ///
+    /// assert_eq!("foobar", s);
+    /// ```
+    #[cfg(not(no_global_oom_handling))]
+    #[inline]
+    pub fn push_u32str(&mut self, string: &u32str) {
+        self.vec.extend_from_slice(&string.data)
     }
 
     /// Copies elements from `src` range to the end of the string.
@@ -876,8 +901,9 @@ impl U32String {
     {
         let src @ Range { start, end } = slice::range(src, ..self.len());
 
-        assert!(self.is_char_boundary(start));
-        assert!(self.is_char_boundary(end));
+        // TODO: Do we need this?
+        // assert!(self.is_char_boundary(start));
+        // assert!(self.is_char_boundary(end));
 
         self.vec.extend_from_within(src);
     }
@@ -1132,34 +1158,29 @@ impl U32String {
     #[cfg(not(no_global_oom_handling))]
     #[inline]
     pub fn push(&mut self, ch: char) {
-        match ch.len_utf8() {
-            1 => self.vec.push(ch as u8),
-            _ => self
-                .vec
-                .extend_from_slice(ch.encode_utf8(&mut [0; 4]).as_bytes()),
-        }
+        self.vec.push(ch)
     }
 
-    /// Returns a byte slice of this `U32String`'s contents.
-    ///
-    /// The inverse of this method is [`from_utf8`].
-    ///
-    /// [`from_utf8`]: U32String::from_utf8
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let s = U32String::from("hello");
-    ///
-    /// assert_eq!(&[104, 101, 108, 108, 111], s.as_bytes());
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn as_bytes(&self) -> &[u8] {
-        &self.vec
-    }
+    // /// Returns a byte slice of this `U32String`'s contents.
+    // ///
+    // /// The inverse of this method is [`from_utf8`].
+    // ///
+    // /// [`from_utf8`]: U32String::from_utf8
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// let s = U32String::from("hello");
+    // ///
+    // /// assert_eq!(&[104, 101, 108, 108, 111], s.as_bytes());
+    // /// ```
+    // #[inline]
+    // #[must_use]
+    // pub fn as_bytes(&self) -> &[u8] {
+    //     &self.vec
+    // }
 
     /// Shortens this `U32String` to the specified length.
     ///
@@ -1187,7 +1208,8 @@ impl U32String {
     #[inline]
     pub fn truncate(&mut self, new_len: usize) {
         if new_len <= self.len() {
-            assert!(self.is_char_boundary(new_len));
+            // TODO: Do we need this?
+            // assert!(self.is_char_boundary(new_len));
             self.vec.truncate(new_len)
         }
     }
@@ -1211,12 +1233,7 @@ impl U32String {
     /// ```
     #[inline]
     pub fn pop(&mut self) -> Option<char> {
-        let ch = self.chars().rev().next()?;
-        let newlen = self.len() - ch.len_utf8();
-        unsafe {
-            self.vec.set_len(newlen);
-        }
-        Some(ch)
+        self.vec.pop()
     }
 
     /// Removes a [`char`] from this `U32String` at a byte position and returns it.
@@ -1242,180 +1259,165 @@ impl U32String {
     /// ```
     #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
-        let ch = match self[idx..].chars().next() {
-            Some(ch) => ch,
-            None => panic!("cannot remove a char from the end of a string"),
-        };
-
-        let next = idx + ch.len_utf8();
-        let len = self.len();
-        unsafe {
-            ptr::copy(
-                self.vec.as_ptr().add(next),
-                self.vec.as_mut_ptr().add(idx),
-                len - next,
-            );
-            self.vec.set_len(len - (next - idx));
-        }
-        ch
+        self.vec.remove(idx)
     }
 
-    /// Remove all matches of pattern `pat` in the `U32String`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// #![feature(string_remove_matches)]
-    /// let mut s = U32String::from("Trees are not green, the sky is not blue.");
-    /// s.remove_matches("not ");
-    /// assert_eq!("Trees are green, the sky is blue.", s);
-    /// ```
-    ///
-    /// Matches will be detected and removed iteratively, so in cases where
-    /// patterns overlap, only the first pattern will be removed:
-    ///
-    /// ```
-    /// #![feature(string_remove_matches)]
-    /// let mut s = U32String::from("banana");
-    /// s.remove_matches("ana");
-    /// assert_eq!("bna", s);
-    /// ```
-    #[cfg(not(no_global_oom_handling))]
-    pub fn remove_matches<'a, P>(&'a mut self, pat: P)
-    where
-        P: for<'x> Pattern<'x>,
-    {
-        use core::str::pattern::Searcher;
+    // /// Remove all matches of pattern `pat` in the `U32String`.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// #![feature(string_remove_matches)]
+    // /// let mut s = U32String::from("Trees are not green, the sky is not blue.");
+    // /// s.remove_matches("not ");
+    // /// assert_eq!("Trees are green, the sky is blue.", s);
+    // /// ```
+    // ///
+    // /// Matches will be detected and removed iteratively, so in cases where
+    // /// patterns overlap, only the first pattern will be removed:
+    // ///
+    // /// ```
+    // /// #![feature(string_remove_matches)]
+    // /// let mut s = U32String::from("banana");
+    // /// s.remove_matches("ana");
+    // /// assert_eq!("bna", s);
+    // /// ```
+    // #[cfg(not(no_global_oom_handling))]
+    // pub fn remove_matches<'a, P>(&'a mut self, pat: P)
+    // where
+    //     P: for<'x> Pattern<'x>,
+    // {
+    //     use core::str::pattern::Searcher;
+    //
+    //     let rejections = {
+    //         let mut searcher = pat.into_searcher(self);
+    //         // Per Searcher::next:
+    //         //
+    //         // A Match result needs to contain the whole matched pattern,
+    //         // however Reject results may be split up into arbitrary many
+    //         // adjacent fragments. Both ranges may have zero length.
+    //         //
+    //         // In practice the implementation of Searcher::next_match tends to
+    //         // be more efficient, so we use it here and do some work to invert
+    //         // matches into rejections since that's what we want to copy below.
+    //         let mut front = 0;
+    //         let rejections: Vec<_> = from_fn(|| {
+    //             let (start, end) = searcher.next_match()?;
+    //             let prev_front = front;
+    //             front = end;
+    //             Some((prev_front, start))
+    //         })
+    //         .collect();
+    //         rejections
+    //             .into_iter()
+    //             .chain(core::iter::once((front, self.len())))
+    //     };
+    //
+    //     let mut len = 0;
+    //     let ptr = self.vec.as_mut_ptr();
+    //
+    //     for (start, end) in rejections {
+    //         let count = end - start;
+    //         if start != len {
+    //             // SAFETY: per Searcher::next:
+    //             //
+    //             // The stream of Match and Reject values up to a Done will
+    //             // contain index ranges that are adjacent, non-overlapping,
+    //             // covering the whole haystack, and laying on utf8
+    //             // boundaries.
+    //             unsafe {
+    //                 ptr::copy(ptr.add(start), ptr.add(len), count);
+    //             }
+    //         }
+    //         len += count;
+    //     }
+    //
+    //     unsafe {
+    //         self.vec.set_len(len);
+    //     }
+    // }
 
-        let rejections = {
-            let mut searcher = pat.into_searcher(self);
-            // Per Searcher::next:
-            //
-            // A Match result needs to contain the whole matched pattern,
-            // however Reject results may be split up into arbitrary many
-            // adjacent fragments. Both ranges may have zero length.
-            //
-            // In practice the implementation of Searcher::next_match tends to
-            // be more efficient, so we use it here and do some work to invert
-            // matches into rejections since that's what we want to copy below.
-            let mut front = 0;
-            let rejections: Vec<_> = from_fn(|| {
-                let (start, end) = searcher.next_match()?;
-                let prev_front = front;
-                front = end;
-                Some((prev_front, start))
-            })
-            .collect();
-            rejections
-                .into_iter()
-                .chain(core::iter::once((front, self.len())))
-        };
-
-        let mut len = 0;
-        let ptr = self.vec.as_mut_ptr();
-
-        for (start, end) in rejections {
-            let count = end - start;
-            if start != len {
-                // SAFETY: per Searcher::next:
-                //
-                // The stream of Match and Reject values up to a Done will
-                // contain index ranges that are adjacent, non-overlapping,
-                // covering the whole haystack, and laying on utf8
-                // boundaries.
-                unsafe {
-                    ptr::copy(ptr.add(start), ptr.add(len), count);
-                }
-            }
-            len += count;
-        }
-
-        unsafe {
-            self.vec.set_len(len);
-        }
-    }
-
-    /// Retains only the characters specified by the predicate.
-    ///
-    /// In other words, remove all characters `c` such that `f(c)` returns `false`.
-    /// This method operates in place, visiting each character exactly once in the
-    /// original order, and preserves the order of the retained characters.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let mut s = U32String::from("f_o_ob_ar");
-    ///
-    /// s.retain(|c| c != '_');
-    ///
-    /// assert_eq!(s, "foobar");
-    /// ```
-    ///
-    /// Because the elements are visited exactly once in the original order,
-    /// external state may be used to decide which elements to keep.
-    ///
-    /// ```
-    /// let mut s = U32String::from("abcde");
-    /// let keep = [false, true, true, false, true];
-    /// let mut iter = keep.iter();
-    /// s.retain(|_| *iter.next().unwrap());
-    /// assert_eq!(s, "bce");
-    /// ```
-    #[inline]
-    pub fn retain<F>(&mut self, mut f: F)
-    where
-        F: FnMut(char) -> bool,
-    {
-        struct SetLenOnDrop<'a> {
-            s: &'a mut U32String,
-            idx: usize,
-            del_bytes: usize,
-        }
-
-        impl<'a> Drop for SetLenOnDrop<'a> {
-            fn drop(&mut self) {
-                let new_len = self.idx - self.del_bytes;
-                debug_assert!(new_len <= self.s.len());
-                unsafe { self.s.vec.set_len(new_len) };
-            }
-        }
-
-        let len = self.len();
-        let mut guard = SetLenOnDrop {
-            s: self,
-            idx: 0,
-            del_bytes: 0,
-        };
-
-        while guard.idx < len {
-            let ch = unsafe {
-                guard
-                    .s
-                    .get_unchecked(guard.idx..len)
-                    .chars()
-                    .next()
-                    .unwrap()
-            };
-            let ch_len = ch.len_utf8();
-
-            if !f(ch) {
-                guard.del_bytes += ch_len;
-            } else if guard.del_bytes > 0 {
-                unsafe {
-                    ptr::copy(
-                        guard.s.vec.as_ptr().add(guard.idx),
-                        guard.s.vec.as_mut_ptr().add(guard.idx - guard.del_bytes),
-                        ch_len,
-                    );
-                }
-            }
-
-            // Point idx to the next char
-            guard.idx += ch_len;
-        }
-
-        drop(guard);
-    }
+    // /// Retains only the characters specified by the predicate.
+    // ///
+    // /// In other words, remove all characters `c` such that `f(c)` returns `false`.
+    // /// This method operates in place, visiting each character exactly once in the
+    // /// original order, and preserves the order of the retained characters.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// let mut s = U32String::from("f_o_ob_ar");
+    // ///
+    // /// s.retain(|c| c != '_');
+    // ///
+    // /// assert_eq!(s, "foobar");
+    // /// ```
+    // ///
+    // /// Because the elements are visited exactly once in the original order,
+    // /// external state may be used to decide which elements to keep.
+    // ///
+    // /// ```
+    // /// let mut s = U32String::from("abcde");
+    // /// let keep = [false, true, true, false, true];
+    // /// let mut iter = keep.iter();
+    // /// s.retain(|_| *iter.next().unwrap());
+    // /// assert_eq!(s, "bce");
+    // /// ```
+    // #[inline]
+    // pub fn retain<F>(&mut self, mut f: F)
+    // where
+    //     F: FnMut(char) -> bool,
+    // {
+    //     struct SetLenOnDrop<'a> {
+    //         s: &'a mut U32String,
+    //         idx: usize,
+    //         del_bytes: usize,
+    //     }
+    //
+    //     impl<'a> Drop for SetLenOnDrop<'a> {
+    //         fn drop(&mut self) {
+    //             let new_len = self.idx - self.del_bytes;
+    //             debug_assert!(new_len <= self.s.len());
+    //             unsafe { self.s.vec.set_len(new_len) };
+    //         }
+    //     }
+    //
+    //     let len = self.len();
+    //     let mut guard = SetLenOnDrop {
+    //         s: self,
+    //         idx: 0,
+    //         del_bytes: 0,
+    //     };
+    //
+    //     while guard.idx < len {
+    //         let ch = unsafe {
+    //             guard
+    //                 .s
+    //                 .get_unchecked(guard.idx..len)
+    //                 .chars()
+    //                 .next()
+    //                 .unwrap()
+    //         };
+    //         let ch_len = ch.len_utf8();
+    //
+    //         if !f(ch) {
+    //             guard.del_bytes += ch_len;
+    //         } else if guard.del_bytes > 0 {
+    //             unsafe {
+    //                 ptr::copy(
+    //                     guard.s.vec.as_ptr().add(guard.idx),
+    //                     guard.s.vec.as_mut_ptr().add(guard.idx - guard.del_bytes),
+    //                     ch_len,
+    //                 );
+    //             }
+    //         }
+    //
+    //         // Point idx to the next char
+    //         guard.idx += ch_len;
+    //     }
+    //
+    //     drop(guard);
+    // }
 
     /// Inserts a character into this `U32String` at a byte position.
     ///
@@ -1443,29 +1445,48 @@ impl U32String {
     #[cfg(not(no_global_oom_handling))]
     #[inline]
     pub fn insert(&mut self, idx: usize, ch: char) {
-        assert!(self.is_char_boundary(idx));
-        let mut bits = [0; 4];
-        let bits = ch.encode_utf8(&mut bits).as_bytes();
-
-        unsafe {
-            self.insert_bytes(idx, bits);
-        }
+        // TODO: Do we need this?
+        // assert!(self.is_char_boundary(idx));
+        self.vec.insert(idx, ch)
+        // let mut bits = [0; 4];
+        // let bits = ch.encode_utf8(&mut bits).as_bytes();
+        //
+        // unsafe {
+        //     self.insert_bytes(idx, bits);
+        // }
     }
 
-    #[cfg(not(no_global_oom_handling))]
-    unsafe fn insert_bytes(&mut self, idx: usize, bytes: &[u8]) {
-        let len = self.len();
-        let amt = bytes.len();
-        self.vec.reserve(amt);
+    // TODO: Implement insert_bytes
+    // #[cfg(not(no_global_oom_handling))]
+    // unsafe fn insert_bytes(&mut self, idx: usize, bytes: &[u8]) {
+    //     let len = self.len();
+    //     let amt = bytes.len();
+    //     self.vec.reserve(amt);
+    //
+    //     unsafe {
+    //         ptr::copy(
+    //             self.vec.as_ptr().add(idx),
+    //             self.vec.as_mut_ptr().add(idx + amt),
+    //             len - idx,
+    //         );
+    //         ptr::copy_nonoverlapping(bytes.as_ptr(), self.vec.as_mut_ptr().add(idx), amt);
+    //         self.vec.set_len(len + amt);
+    //     }
+    // }
 
+    #[cfg(not(no_global_oom_handling))]
+    unsafe fn insert_chars(&mut self, idx: usize, chars: &[char]) {
+        let len = self.len();
+        let amount = chars.len();
+        self.vec.reserve(amount);
         unsafe {
             ptr::copy(
                 self.vec.as_ptr().add(idx),
-                self.vec.as_mut_ptr().add(idx + amt),
+                self.vec.as_mut_ptr().add(idx + amount),
                 len - idx,
             );
-            ptr::copy_nonoverlapping(bytes.as_ptr(), self.vec.as_mut_ptr().add(idx), amt);
-            self.vec.set_len(len + amt);
+            ptr::copy_nonoverlapping(chars.as_ptr(), self.vec.as_mut_ptr().add(idx), amount);
+            self.vec.set_len(len + amount);
         }
     }
 
@@ -1492,13 +1513,15 @@ impl U32String {
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
-    pub fn insert_str(&mut self, idx: usize, string: &str) {
-        assert!(self.is_char_boundary(idx));
-
+    pub fn insert_u32str(&mut self, idx: usize, string: &u32str) {
+        // TODO: Do we need this?
+        // assert!(self.is_char_boundary(idx));
         unsafe {
-            self.insert_bytes(idx, string.as_bytes());
+            self.insert_chars(idx, &string.data);
         }
     }
+
+    // TODO: Implement insert_str
 
     /// Returns a mutable reference to the contents of this `U32String`.
     ///
@@ -1523,10 +1546,10 @@ impl U32String {
     ///
     ///     vec.reverse();
     /// }
-    /// assert_eq!(s, "olleh");
+    /// assert_eq!(s, "olleh" );
     /// ```
     #[inline]
-    pub unsafe fn as_mut_vec(&mut self) -> &mut Vec<u8> {
+    pub unsafe fn as_mut_vec(&mut self) -> &mut Vec<char> {
         &mut self.vec
     }
 
@@ -1598,9 +1621,11 @@ impl U32String {
     #[inline]
     #[must_use = "use `.truncate()` if you don't need the other half"]
     pub fn split_off(&mut self, at: usize) -> U32String {
-        assert!(self.is_char_boundary(at));
+        // TODO: Do we need this?
+        // assert!(self.is_char_boundary(at));
         let other = self.vec.split_off(at);
-        unsafe { U32String::from_utf8_unchecked(other) }
+        // unsafe { U32String::from_utf8_unchecked(other) }
+        U32String { vec: other }
     }
 
     /// Truncates this `U32String`, removing all contents.
@@ -1626,143 +1651,146 @@ impl U32String {
         self.vec.clear()
     }
 
-    /// Removes the specified range from the string in bulk, returning all
-    /// removed characters as an iterator.
-    ///
-    /// The returned iterator keeps a mutable borrow on the string to optimize
-    /// its implementation.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the starting point or end point do not lie on a [`char`]
-    /// boundary, or if they're out of bounds.
-    ///
-    /// # Leaking
-    ///
-    /// If the returned iterator goes out of scope without being dropped (due to
-    /// [`core::mem::forget`], for example), the string may still contain a copy
-    /// of any drained characters, or may have lost characters arbitrarily,
-    /// including characters outside the range.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let mut s = U32String::from("α is alpha, β is beta");
-    /// let beta_offset = s.find('β').unwrap_or(s.len());
-    ///
-    /// // Remove the range up until the β from the string
-    /// let t: U32String = s.drain(..beta_offset).collect();
-    /// assert_eq!(t, "α is alpha, ");
-    /// assert_eq!(s, "β is beta");
-    ///
-    /// // A full range clears the string, like `clear()` does
-    /// s.drain(..);
-    /// assert_eq!(s, "");
-    /// ```
-    pub fn drain<R>(&mut self, range: R) -> Drain<'_>
-    where
-        R: RangeBounds<usize>,
-    {
-        // Memory safety
-        //
-        // The U32String version of Drain does not have the memory safety issues
-        // of the vector version. The data is just plain bytes.
-        // Because the range removal happens in Drop, if the Drain iterator is leaked,
-        // the removal will not happen.
-        let Range { start, end } = slice::range(range, ..self.len());
-        assert!(self.is_char_boundary(start));
-        assert!(self.is_char_boundary(end));
+    // /// Removes the specified range from the string in bulk, returning all
+    // /// removed characters as an iterator.
+    // ///
+    // /// The returned iterator keeps a mutable borrow on the string to optimize
+    // /// its implementation.
+    // ///
+    // /// # Panics
+    // ///
+    // /// Panics if the starting point or end point do not lie on a [`char`]
+    // /// boundary, or if they're out of bounds.
+    // ///
+    // /// # Leaking
+    // ///
+    // /// If the returned iterator goes out of scope without being dropped (due to
+    // /// [`core::mem::forget`], for example), the string may still contain a copy
+    // /// of any drained characters, or may have lost characters arbitrarily,
+    // /// including characters outside the range.
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// let mut s = U32String::from("α is alpha, β is beta");
+    // /// let beta_offset = s.find('β').unwrap_or(s.len());
+    // ///
+    // /// // Remove the range up until the β from the string
+    // /// let t: U32String = s.drain(..beta_offset).collect();
+    // /// assert_eq!(t, "α is alpha, ");
+    // /// assert_eq!(s, "β is beta");
+    // ///
+    // /// // A full range clears the string, like `clear()` does
+    // /// s.drain(..);
+    // /// assert_eq!(s, "");
+    // /// ```
+    // pub fn drain<R>(&mut self, range: R) -> Drain<'_>
+    // where
+    //     R: RangeBounds<usize>,
+    // {
+    //     // Memory safety
+    //     //
+    //     // The U32String version of Drain does not have the memory safety issues
+    //     // of the vector version. The data is just plain bytes.
+    //     // Because the range removal happens in Drop, if the Drain iterator is leaked,
+    //     // the removal will not happen.
+    //     let Range { start, end } = slice::range(range, ..self.len());
+    //     // TODO: Do we need this?
+    //     // assert!(self.is_char_boundary(start));
+    //     // assert!(self.is_char_boundary(end));
+    //
+    //     // Take out two simultaneous borrows. The &mut U32String won't be accessed
+    //     // until iteration is over, in Drop.
+    //     let self_ptr = self as *mut _;
+    //     // SAFETY: `slice::range` and `is_char_boundary` do the appropriate bounds checks.
+    //     let chars_iter = unsafe { self.get_unchecked(start..end) }.chars();
+    //
+    //     Drain {
+    //         start,
+    //         end,
+    //         iter: chars_iter,
+    //         string: self_ptr,
+    //     }
+    // }
 
-        // Take out two simultaneous borrows. The &mut U32String won't be accessed
-        // until iteration is over, in Drop.
-        let self_ptr = self as *mut _;
-        // SAFETY: `slice::range` and `is_char_boundary` do the appropriate bounds checks.
-        let chars_iter = unsafe { self.get_unchecked(start..end) }.chars();
+    // /// Removes the specified range in the string,
+    // /// and replaces it with the given string.
+    // /// The given string doesn't need to be the same length as the range.
+    // ///
+    // /// # Panics
+    // ///
+    // /// Panics if the starting point or end point do not lie on a [`char`]
+    // /// boundary, or if they're out of bounds.
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// let mut s = U32String::from("α is alpha, β is beta");
+    // /// let beta_offset = s.find('β').unwrap_or(s.len());
+    // ///
+    // /// // Replace the range up until the β from the string
+    // /// s.replace_range(..beta_offset, "Α is capital alpha; ");
+    // /// assert_eq!(s, "Α is capital alpha; β is beta");
+    // /// ```
+    // #[cfg(not(no_global_oom_handling))]
+    // pub fn replace_range<R>(&mut self, range: R, replace_with: &str)
+    // where
+    //     R: RangeBounds<usize>,
+    // {
+    //     // Memory safety
+    //     //
+    //     // Replace_range does not have the memory safety issues of a vector Splice.
+    //     // of the vector version. The data is just plain bytes.
+    //
+    //     // WARNING: Inlining this variable would be unsound (#81138)
+    //     let start = range.start_bound();
+    //     // TODO: Do we need this?
+    //     // match start {
+    //     //     Included(&n) => assert!(self.is_char_boundary(n)),
+    //     //     Excluded(&n) => assert!(self.is_char_boundary(n + 1)),
+    //     //     Unbounded => {}
+    //     // };
+    //     // WARNING: Inlining this variable would be unsound (#81138)
+    //     let end = range.end_bound();
+    //     // TODO: Do we need this?
+    //     // match end {
+    //     //     Included(&n) => assert!(self.is_char_boundary(n + 1)),
+    //     //     Excluded(&n) => assert!(self.is_char_boundary(n)),
+    //     //     Unbounded => {}
+    //     // };
+    //
+    //     // Using `range` again would be unsound (#81138)
+    //     // We assume the bounds reported by `range` remain the same, but
+    //     // an adversarial implementation could change between calls
+    //     unsafe { self.as_mut_vec() }.splice((start, end), replace_with.bytes());
+    // }
 
-        Drain {
-            start,
-            end,
-            iter: chars_iter,
-            string: self_ptr,
-        }
-    }
-
-    /// Removes the specified range in the string,
-    /// and replaces it with the given string.
-    /// The given string doesn't need to be the same length as the range.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the starting point or end point do not lie on a [`char`]
-    /// boundary, or if they're out of bounds.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let mut s = U32String::from("α is alpha, β is beta");
-    /// let beta_offset = s.find('β').unwrap_or(s.len());
-    ///
-    /// // Replace the range up until the β from the string
-    /// s.replace_range(..beta_offset, "Α is capital alpha; ");
-    /// assert_eq!(s, "Α is capital alpha; β is beta");
-    /// ```
-    #[cfg(not(no_global_oom_handling))]
-    pub fn replace_range<R>(&mut self, range: R, replace_with: &str)
-    where
-        R: RangeBounds<usize>,
-    {
-        // Memory safety
-        //
-        // Replace_range does not have the memory safety issues of a vector Splice.
-        // of the vector version. The data is just plain bytes.
-
-        // WARNING: Inlining this variable would be unsound (#81138)
-        let start = range.start_bound();
-        match start {
-            Included(&n) => assert!(self.is_char_boundary(n)),
-            Excluded(&n) => assert!(self.is_char_boundary(n + 1)),
-            Unbounded => {}
-        };
-        // WARNING: Inlining this variable would be unsound (#81138)
-        let end = range.end_bound();
-        match end {
-            Included(&n) => assert!(self.is_char_boundary(n + 1)),
-            Excluded(&n) => assert!(self.is_char_boundary(n)),
-            Unbounded => {}
-        };
-
-        // Using `range` again would be unsound (#81138)
-        // We assume the bounds reported by `range` remain the same, but
-        // an adversarial implementation could change between calls
-        unsafe { self.as_mut_vec() }.splice((start, end), replace_with.bytes());
-    }
-
-    /// Converts this `U32String` into a <code>[Box]<[str]></code>.
-    ///
-    /// This will drop any excess capacity.
-    ///
-    /// [str]: prim@str "str"
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let s = U32String::from("hello");
-    ///
-    /// let b = s.into_boxed_str();
-    /// ```
-    #[cfg(not(no_global_oom_handling))]
-    #[must_use = "`self` will be dropped if the result is not used"]
-    #[inline]
-    pub fn into_boxed_str(self) -> Box<str> {
-        let slice = self.vec.into_boxed_slice();
-        unsafe { from_boxed_utf8_unchecked(slice) }
-    }
+    // /// Converts this `U32String` into a <code>[Box]<[str]></code>.
+    // ///
+    // /// This will drop any excess capacity.
+    // ///
+    // /// [str]: prim@str "str"
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// let s = U32String::from("hello");
+    // ///
+    // /// let b = s.into_boxed_str();
+    // /// ```
+    // #[cfg(not(no_global_oom_handling))]
+    // #[must_use = "`self` will be dropped if the result is not used"]
+    // #[inline]
+    // pub fn into_boxed_str(self) -> Box<str> {
+    //     let slice = self.vec.into_boxed_slice();
+    //     unsafe { from_boxed_utf8_unchecked(slice) }
+    // }
 }
 
 impl FromUtf8Error {
@@ -1881,8 +1909,8 @@ impl<'a> FromIterator<&'a char> for U32String {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a> FromIterator<&'a str> for U32String {
-    fn from_iter<I: IntoIterator<Item = &'a str>>(iter: I) -> U32String {
+impl<'a> FromIterator<&'a u32str> for U32String {
+    fn from_iter<I: IntoIterator<Item = &'a u32str>>(iter: I) -> U32String {
         let mut buf = U32String::new();
         buf.extend(iter);
         buf
@@ -1973,87 +2001,87 @@ impl<'a> Extend<&'a char> for U32String {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl<'a> Extend<&'a str> for U32String {
-    fn extend<I: IntoIterator<Item = &'a str>>(&mut self, iter: I) {
-        iter.into_iter().for_each(move |s| self.push_str(s));
+impl<'a> Extend<&'a u32str> for U32String {
+    fn extend<I: IntoIterator<Item = &'a u32str>>(&mut self, iter: I) {
+        iter.into_iter().for_each(move |s| self.push_u32str(s));
     }
 
     #[inline]
-    fn extend_one(&mut self, s: &'a str) {
-        self.push_str(s);
+    fn extend_one(&mut self, s: &'a u32str) {
+        self.push_u32str(s);
     }
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl Extend<Box<str>> for U32String {
-    fn extend<I: IntoIterator<Item = Box<str>>>(&mut self, iter: I) {
-        iter.into_iter().for_each(move |s| self.push_str(&s));
+impl Extend<Box<u32str>> for U32String {
+    fn extend<I: IntoIterator<Item = Box<u32str>>>(&mut self, iter: I) {
+        iter.into_iter().for_each(move |s| self.push_u32str(&s));
     }
 }
 
 #[cfg(not(no_global_oom_handling))]
 impl Extend<U32String> for U32String {
     fn extend<I: IntoIterator<Item = U32String>>(&mut self, iter: I) {
-        iter.into_iter().for_each(move |s| self.push_str(&s));
+        iter.into_iter().for_each(move |s| self.push_u32str(&s));
     }
 
     #[inline]
     fn extend_one(&mut self, s: U32String) {
-        self.push_str(&s);
+        self.push_u32str(&s);
     }
 }
 
 #[cfg(not(no_global_oom_handling))]
 impl<'a> Extend<Cow<'a, u32str>> for U32String {
     fn extend<I: IntoIterator<Item = Cow<'a, u32str>>>(&mut self, iter: I) {
-        iter.into_iter().for_each(move |s| self.push_str(&s));
+        iter.into_iter().for_each(move |s| self.push_u32str(&s));
     }
 
     #[inline]
     fn extend_one(&mut self, s: Cow<'a, u32str>) {
-        self.push_str(&s);
+        self.push_u32str(&s);
     }
 }
 
-/// A convenience impl that delegates to the impl for `&str`.
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(U32String::from("Hello world").find("world"), Some(6));
-/// ```
-impl<'a, 'b> Pattern<'a> for &'b U32String {
-    type Searcher = <&'b str as Pattern<'a>>::Searcher;
-
-    fn into_searcher(self, haystack: &'a str) -> <&'b str as Pattern<'a>>::Searcher {
-        self[..].into_searcher(haystack)
-    }
-
-    #[inline]
-    fn is_contained_in(self, haystack: &'a str) -> bool {
-        self[..].is_contained_in(haystack)
-    }
-
-    #[inline]
-    fn is_prefix_of(self, haystack: &'a str) -> bool {
-        self[..].is_prefix_of(haystack)
-    }
-
-    #[inline]
-    fn strip_prefix_of(self, haystack: &'a str) -> Option<&'a str> {
-        self[..].strip_prefix_of(haystack)
-    }
-
-    #[inline]
-    fn is_suffix_of(self, haystack: &'a str) -> bool {
-        self[..].is_suffix_of(haystack)
-    }
-
-    #[inline]
-    fn strip_suffix_of(self, haystack: &'a str) -> Option<&'a str> {
-        self[..].strip_suffix_of(haystack)
-    }
-}
+// /// A convenience impl that delegates to the impl for `&str`.
+// ///
+// /// # Examples
+// ///
+// /// ```
+// /// assert_eq!(U32String::from("Hello world").find("world"), Some(6));
+// /// ```
+// impl<'a, 'b> Pattern<'a> for &'b U32String {
+//     type Searcher = <&'b str as Pattern<'a>>::Searcher;
+//
+//     fn into_searcher(self, haystack: &'a str) -> <&'b str as Pattern<'a>>::Searcher {
+//         self[..].into_searcher(haystack)
+//     }
+//
+//     #[inline]
+//     fn is_contained_in(self, haystack: &'a str) -> bool {
+//         self[..].is_contained_in(haystack)
+//     }
+//
+//     #[inline]
+//     fn is_prefix_of(self, haystack: &'a str) -> bool {
+//         self[..].is_prefix_of(haystack)
+//     }
+//
+//     #[inline]
+//     fn strip_prefix_of(self, haystack: &'a str) -> Option<&'a str> {
+//         self[..].strip_prefix_of(haystack)
+//     }
+//
+//     #[inline]
+//     fn is_suffix_of(self, haystack: &'a str) -> bool {
+//         self[..].is_suffix_of(haystack)
+//     }
+//
+//     #[inline]
+//     fn strip_suffix_of(self, haystack: &'a str) -> Option<&'a str> {
+//         self[..].strip_suffix_of(haystack)
+//     }
+// }
 
 impl PartialEq for U32String {
     #[inline]
@@ -2170,12 +2198,12 @@ impl hash::Hash for U32String {
 /// let c = a.to_string() + b;
 /// ```
 #[cfg(not(no_global_oom_handling))]
-impl Add<&str> for U32String {
+impl Add<&u32str> for U32String {
     type Output = U32String;
 
     #[inline]
-    fn add(mut self, other: &str) -> U32String {
-        self.push_str(other);
+    fn add(mut self, other: &u32str) -> U32String {
+        self.push_u32str(other);
         self
     }
 }
@@ -2184,96 +2212,98 @@ impl Add<&str> for U32String {
 ///
 /// This has the same behavior as the [`push_str`][U32String::push_str] method.
 #[cfg(not(no_global_oom_handling))]
-impl AddAssign<&str> for U32String {
+impl AddAssign<&u32str> for U32String {
     #[inline]
-    fn add_assign(&mut self, other: &str) {
-        self.push_str(other);
+    fn add_assign(&mut self, other: &u32str) {
+        self.push_u32str(other);
     }
 }
 
 impl ops::Index<ops::Range<usize>> for U32String {
-    type Output = str;
+    type Output = u32str;
 
     #[inline]
-    fn index(&self, index: ops::Range<usize>) -> &str {
+    fn index(&self, index: ops::Range<usize>) -> &u32str {
         &self[..][index]
     }
 }
 impl ops::Index<ops::RangeTo<usize>> for U32String {
-    type Output = str;
+    type Output = u32str;
 
     #[inline]
-    fn index(&self, index: ops::RangeTo<usize>) -> &str {
+    fn index(&self, index: ops::RangeTo<usize>) -> &u32str {
         &self[..][index]
     }
 }
 impl ops::Index<ops::RangeFrom<usize>> for U32String {
-    type Output = str;
+    type Output = u32str;
 
     #[inline]
-    fn index(&self, index: ops::RangeFrom<usize>) -> &str {
+    fn index(&self, index: ops::RangeFrom<usize>) -> &u32str {
         &self[..][index]
     }
 }
 impl ops::Index<ops::RangeFull> for U32String {
-    type Output = str;
+    type Output = u32str;
 
     #[inline]
-    fn index(&self, _index: ops::RangeFull) -> &str {
-        unsafe { str::from_utf8_unchecked(&self.vec) }
+    fn index(&self, _index: ops::RangeFull) -> &u32str {
+        // unsafe { str::from_utf8_unchecked(&self.vec) }
+        &self[..]
     }
 }
 impl ops::Index<ops::RangeInclusive<usize>> for U32String {
-    type Output = str;
+    type Output = u32str;
 
     #[inline]
-    fn index(&self, index: ops::RangeInclusive<usize>) -> &str {
-        Index::index(&**self, index)
+    fn index(&self, index: ops::RangeInclusive<usize>) -> &u32str {
+        ops::Index::index(&**self, index)
     }
 }
 impl ops::Index<ops::RangeToInclusive<usize>> for U32String {
-    type Output = str;
+    type Output = u32str;
 
     #[inline]
-    fn index(&self, index: ops::RangeToInclusive<usize>) -> &str {
-        Index::index(&**self, index)
+    fn index(&self, index: ops::RangeToInclusive<usize>) -> &u32str {
+        ops::Index::index(&**self, index)
     }
 }
 
 impl ops::IndexMut<ops::Range<usize>> for U32String {
     #[inline]
-    fn index_mut(&mut self, index: ops::Range<usize>) -> &mut str {
+    fn index_mut(&mut self, index: ops::Range<usize>) -> &mut u32str {
         &mut self[..][index]
     }
 }
 impl ops::IndexMut<ops::RangeTo<usize>> for U32String {
     #[inline]
-    fn index_mut(&mut self, index: ops::RangeTo<usize>) -> &mut str {
+    fn index_mut(&mut self, index: ops::RangeTo<usize>) -> &mut u32str {
         &mut self[..][index]
     }
 }
 impl ops::IndexMut<ops::RangeFrom<usize>> for U32String {
     #[inline]
-    fn index_mut(&mut self, index: ops::RangeFrom<usize>) -> &mut str {
+    fn index_mut(&mut self, index: ops::RangeFrom<usize>) -> &mut u32str {
         &mut self[..][index]
     }
 }
 impl ops::IndexMut<ops::RangeFull> for U32String {
     #[inline]
-    fn index_mut(&mut self, _index: ops::RangeFull) -> &mut str {
-        unsafe { str::from_utf8_unchecked_mut(&mut *self.vec) }
+    fn index_mut(&mut self, _index: ops::RangeFull) -> &mut u32str {
+        // unsafe { str::from_utf8_unchecked_mut(&mut *self.vec) }
+        &mut self
     }
 }
 impl ops::IndexMut<ops::RangeInclusive<usize>> for U32String {
     #[inline]
-    fn index_mut(&mut self, index: ops::RangeInclusive<usize>) -> &mut str {
-        IndexMut::index_mut(&mut **self, index)
+    fn index_mut(&mut self, index: ops::RangeInclusive<usize>) -> &mut u32str {
+        ops::IndexMut::index_mut(&mut **self, index)
     }
 }
 impl ops::IndexMut<ops::RangeToInclusive<usize>> for U32String {
     #[inline]
-    fn index_mut(&mut self, index: ops::RangeToInclusive<usize>) -> &mut str {
-        IndexMut::index_mut(&mut **self, index)
+    fn index_mut(&mut self, index: ops::RangeToInclusive<usize>) -> &mut u32str {
+        ops::IndexMut::index_mut(&mut **self, index)
     }
 }
 
@@ -2282,14 +2312,16 @@ impl ops::Deref for U32String {
 
     #[inline]
     fn deref(&self) -> &u32str {
-        unsafe { str::from_utf8_unchecked(&self.vec) }
+        // unsafe { str::from_utf8_unchecked(&self.vec) }
+        unsafe { u32str::from_char_unchecked(&self.vec) }
     }
 }
 
 impl ops::DerefMut for U32String {
     #[inline]
-    fn deref_mut(&mut self) -> &mut str {
-        unsafe { str::from_utf8_unchecked_mut(&mut *self.vec) }
+    fn deref_mut(&mut self) -> &mut u32str {
+        // unsafe { str::from_utf8_unchecked_mut(&mut *self.vec) }
+        unsafe { u32str::from_char_unchecked_mut(&mut *self.vec) }
     }
 }
 
@@ -2300,14 +2332,14 @@ impl ops::DerefMut for U32String {
 /// [`Infallible`]: core::convert::Infallible "convert::Infallible"
 pub type ParseError = core::convert::Infallible;
 
-#[cfg(not(no_global_oom_handling))]
-impl FromStr for U32String {
-    type Err = core::convert::Infallible;
-    #[inline]
-    fn from_str(s: &str) -> Result<U32String, Self::Err> {
-        Ok(U32String::from(s))
-    }
-}
+// #[cfg(not(no_global_oom_handling))]
+// impl FromStr for U32String {
+//     type Err = core::convert::Infallible;
+//     #[inline]
+//     fn from_str(s: &str) -> Result<U32String, Self::Err> {
+//         Ok(U32String::from(s))
+//     }
+// }
 
 /// A trait for converting a value to a `U32String`.
 ///
@@ -2350,7 +2382,7 @@ impl<T: fmt::Display + ?Sized> ToU32String for T {
     #[inline]
     default fn to_string(&self) -> U32String {
         let mut buf = U32String::new();
-        let mut formatter = core::fmt::Formatter::new(&mut buf);
+        let mut formatter = fmt::Formatter::new(&mut buf);
         // Bypass format_args!() to avoid write_str with zero-length strs
         fmt::Display::fmt(self, &mut formatter)
             .expect("a Display implementation returned an error unexpectedly");
@@ -2362,7 +2394,7 @@ impl<T: fmt::Display + ?Sized> ToU32String for T {
 impl ToU32String for char {
     #[inline]
     fn to_string(&self) -> U32String {
-        U32String::from(self.encode_utf8(&mut [0; 4]))
+        U32String::from(self)
     }
 }
 
@@ -2415,13 +2447,14 @@ impl ToU32String for str {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
-impl ToU32String for Cow<'_, str> {
-    #[inline]
-    fn to_string(&self) -> U32String {
-        self[..].to_owned()
-    }
-}
+// TODO: This conflicts with impl<T: fmt::Display + ?Sized> ToU32String for T {
+// #[cfg(not(no_global_oom_handling))]
+// impl ToU32String for Cow<'_, u32str> {
+//     #[inline]
+//     fn to_string(&self) -> U32String {
+//         self[..].to_owned()
+//     }
+// }
 
 #[cfg(not(no_global_oom_handling))]
 impl ToU32String for U32String {
@@ -2431,16 +2464,16 @@ impl ToU32String for U32String {
     }
 }
 
-impl AsRef<str> for U32String {
+impl AsRef<u32str> for U32String {
     #[inline]
-    fn as_ref(&self) -> &str {
+    fn as_ref(&self) -> &u32str {
         self
     }
 }
 
-impl AsMut<str> for U32String {
+impl AsMut<u32str> for U32String {
     #[inline]
-    fn as_mut(&mut self) -> &mut str {
+    fn as_mut(&mut self) -> &mut u32str {
         self
     }
 }
@@ -2453,23 +2486,23 @@ impl AsRef<[u8]> for U32String {
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl From<&str> for U32String {
+impl From<&u32str> for U32String {
     /// Converts a `&str` into a [`U32String`].
     ///
     /// The result is allocated on the heap.
     #[inline]
-    fn from(s: &str) -> U32String {
+    fn from(s: &u32str) -> U32String {
         s.to_owned()
     }
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl From<&mut str> for U32String {
+impl From<&mut u32str> for U32String {
     /// Converts a `&mut str` into a [`U32String`].
     ///
     /// The result is allocated on the heap.
     #[inline]
-    fn from(s: &mut str) -> U32String {
+    fn from(s: &mut u32str) -> U32String {
         s.to_owned()
     }
 }
@@ -2487,7 +2520,7 @@ impl From<&U32String> for U32String {
 
 // note: test pulls in libstd, which causes errors here
 #[cfg(not(test))]
-impl From<Box<str>> for U32String {
+impl From<Box<u32str>> for U32String {
     /// Converts the given boxed `str` slice to a [`U32String`].
     /// It is notable that the `str` slice is owned.
     ///
@@ -2502,13 +2535,13 @@ impl From<Box<str>> for U32String {
     ///
     /// assert_eq!("hello world", s3)
     /// ```
-    fn from(s: Box<str>) -> U32String {
+    fn from(s: Box<u32str>) -> U32String {
         s.into_string()
     }
 }
 
 #[cfg(not(no_global_oom_handling))]
-impl From<U32String> for Box<str> {
+impl From<U32String> for Box<u32str> {
     /// Converts the given [`U32String`] to a boxed `str` slice that is owned.
     ///
     /// # Examples
@@ -2522,7 +2555,7 @@ impl From<U32String> for Box<str> {
     ///
     /// assert_eq!("hello world", s3)
     /// ```
-    fn from(s: U32String) -> Box<str> {
+    fn from(s: U32String) -> Box<u32str> {
         s.into_boxed_str()
     }
 }
@@ -2613,16 +2646,17 @@ impl<'a> From<&'a U32String> for Cow<'a, u32str> {
     }
 }
 
-#[cfg(not(no_global_oom_handling))]
-impl<'a> FromIterator<char> for Cow<'a, u32str> {
-    fn from_iter<I: IntoIterator<Item = char>>(it: I) -> Cow<'a, u32str> {
-        Cow::Owned(FromIterator::from_iter(it))
-    }
-}
+// TODO: Figure out how to do this...
+// #[cfg(not(no_global_oom_handling))]
+// impl<'a> FromIterator<char> for Cow<'a, u32str> {
+//     fn from_iter<I: IntoIterator<Item = char>>(it: I) -> Cow<'a, u32str> {
+//         Cow::Owned(FromIterator::from_iter(it))
+//     }
+// }
 
 #[cfg(not(no_global_oom_handling))]
 impl<'a, 'b> FromIterator<&'b u32str> for Cow<'a, u32str> {
-    fn from_iter<I: IntoIterator<Item = &'b str>>(it: I) -> Cow<'a, u32str> {
+    fn from_iter<I: IntoIterator<Item = &'b u32str>>(it: I) -> Cow<'a, u32str> {
         Cow::Owned(FromIterator::from_iter(it))
     }
 }

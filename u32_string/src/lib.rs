@@ -1,11 +1,14 @@
 #![feature(const_trait_impl)]
 #![feature(extend_one)]
+#![feature(fmt_internals)]
 #![feature(pattern)]
 #![feature(rustc_attrs)]
 #![feature(slice_concat_trait)]
 #![feature(slice_range)]
 #![feature(specialization)]
 #![feature(str_internals)]
+#![feature(unicode_internals)]
+#![feature(vec_into_raw_parts)]
 
 use proc_macro::{Delimiter, Group, Literal, Punct, Spacing, TokenStream, TokenTree};
 use syn::{parse_macro_input, LitStr};
