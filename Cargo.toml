@@ -1,11 +1,5 @@
-[package]
-name = "rs-unicode-string"
-version = "0.1.0"
-edition = "2021"
-authors = [
-    "Tomasz Mikus <mikus.tomasz@gmail.com>"
+[workspace]
+members = [
+    "u32_string",
+    "u32_string_tests"
 ]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]

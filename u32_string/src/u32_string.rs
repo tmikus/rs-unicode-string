@@ -491,8 +491,12 @@ impl U32String {
     /// [`into_bytes`]: U32String::into_bytes
     #[inline]
     pub fn from_utf8(vec: Vec<u8>) -> Result<U32String, FromUtf8Error> {
+        // TODO: Improve performance of this
+        // https://trello.com/c/DCIsf6DI/1-improve-the-performance-of-the-u32stringfromutf8
         match str::from_utf8(&vec) {
-            Ok(..) => Ok(U32String { vec }),
+            Ok(v) => Ok(U32String {
+                vec: v.chars().collect(),
+            }),
             Err(e) => Err(FromUtf8Error {
                 bytes: vec,
                 error: e,
@@ -551,7 +555,7 @@ impl U32String {
     /// ```
     #[must_use]
     #[cfg(not(no_global_oom_handling))]
-    pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, u32str> {
         let mut iter = lossy::Utf8Lossy::from_bytes(v).chunks();
 
         let first_valid = if let Some(chunk) = iter.next() {
