@@ -51,7 +51,6 @@ pub use core::str::SplitAsciiWhitespace;
 pub use core::str::SplitInclusive;
 pub use core::str::SplitWhitespace;
 pub use core::str::{from_utf8, from_utf8_mut, Bytes, CharIndices, Chars};
-// pub use core::str::{from_utf8_unchecked, from_utf8_unchecked_mut, ParseBoolError};
 pub use core::str::{EscapeDebug, EscapeDefault, EscapeUnicode};
 pub use core::str::{FromStr, Utf8Error};
 #[allow(deprecated)]
@@ -83,95 +82,7 @@ impl<S: Borrow<u32str>> Join<&u32str> for [S] {
     type Output = U32String;
 
     fn join(slice: &Self, sep: &u32str) -> U32String {
-        unsafe { U32String::from_chars(join_generic_copy(slice, sep.as_bytes())) }
-    }
-}
-
-impl ops::Index<ops::Range<usize>> for u32str {
-    type Output = u32str;
-
-    #[inline]
-    fn index(&self, index: ops::Range<usize>) -> &u32str {
-        &self[..][index]
-    }
-}
-impl ops::Index<ops::RangeTo<usize>> for u32str {
-    type Output = u32str;
-
-    #[inline]
-    fn index(&self, index: ops::RangeTo<usize>) -> &u32str {
-        &self[..][index]
-    }
-}
-impl ops::Index<ops::RangeFrom<usize>> for u32str {
-    type Output = u32str;
-
-    #[inline]
-    fn index(&self, index: ops::RangeFrom<usize>) -> &u32str {
-        &self[..][index]
-    }
-}
-impl ops::Index<ops::RangeFull> for u32str {
-    type Output = u32str;
-
-    #[inline]
-    fn index(&self, _index: ops::RangeFull) -> &u32str {
-        unsafe { u32str::from_char_unchecked(&self.data) }
-        // unsafe { u32str::from_utf8_unchecked(&self.data) }
-    }
-}
-impl ops::Index<ops::RangeInclusive<usize>> for u32str {
-    type Output = u32str;
-
-    #[inline]
-    fn index(&self, index: ops::RangeInclusive<usize>) -> &u32str {
-        ops::Index::index(&**self, index)
-    }
-}
-impl ops::Index<ops::RangeToInclusive<usize>> for u32str {
-    type Output = u32str;
-
-    #[inline]
-    fn index(&self, index: ops::RangeToInclusive<usize>) -> &u32str {
-        ops::Index::index(&**self, index)
-    }
-}
-
-impl ops::IndexMut<ops::Range<usize>> for u32str {
-    #[inline]
-    fn index_mut(&mut self, index: ops::Range<usize>) -> &mut u32str {
-        &mut self[..][index]
-    }
-}
-impl ops::IndexMut<ops::RangeTo<usize>> for u32str {
-    #[inline]
-    fn index_mut(&mut self, index: ops::RangeTo<usize>) -> &mut u32str {
-        &mut self[..][index]
-    }
-}
-impl ops::IndexMut<ops::RangeFrom<usize>> for u32str {
-    #[inline]
-    fn index_mut(&mut self, index: ops::RangeFrom<usize>) -> &mut u32str {
-        &mut self[..][index]
-    }
-}
-impl ops::IndexMut<ops::RangeFull> for u32str {
-    #[inline]
-    fn index_mut(&mut self, _index: ops::RangeFull) -> &mut u32str {
-        unsafe { u32str::from_char_unchecked_mut(&mut *self.data) }
-        // unsafe { u32str::from_utf8_unchecked_mut(&mut *self.data) }
-    }
-}
-impl ops::IndexMut<ops::RangeInclusive<usize>> for u32str {
-    #[inline]
-    fn index_mut(&mut self, index: ops::RangeInclusive<usize>) -> &mut u32str {
-        ops::IndexMut::index_mut(&mut **self, index)
-    }
-}
-impl ops::IndexMut<ops::RangeToInclusive<usize>> for u32str {
-    #[inline]
-    fn index_mut(&mut self, index: ops::RangeToInclusive<usize>) -> &mut u32str {
-        ops::IndexMut::index_mut(&mut **self, index)
+        unsafe { U32String::from_chars(join_generic_copy(slice, &sep.data)) }
     }
 }
 
@@ -327,6 +238,42 @@ impl ToOwned for u32str {
 /// Methods for string slices.
 #[cfg(not(test))]
 impl u32str {
+    /// Returns the length of a str
+    ///
+    /// The returned value is the number of **elements**, not the number of bytes.
+    ///
+    /// This function is safe, even when the raw slice cannot be cast to a slice
+    /// reference because the pointer is null or unaligned.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+
+    /// ```
+    #[inline]
+    pub const fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    /// Converts a boxed slice of chars to a boxed u32 string slice without checking
+    /// that the string contains valid UTF-8.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// let smile_chars = Box::new(['s', 'm', 'i', 'l', 'e']);
+    /// let smile = unsafe { from_boxed_chars(smile_chars) };
+    ///
+    /// assert_eq!("smile", &*smile);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub unsafe fn from_boxed_chars(v: Box<[char]>) -> Box<u32str> {
+        unsafe { Box::from_raw(Box::into_raw(v) as *mut u32str) }
+    }
+
     // /// Converts a `Box<str>` into a `Box<[u8]>` without copying or allocating.
     // ///
     // /// # Examples
@@ -1020,25 +967,6 @@ impl std::fmt::Display for u32str {
     }
 }
 
-/// Converts a boxed slice of bytes to a boxed string slice without checking
-/// that the string contains valid UTF-8.
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```
-/// let smile_utf8 = Box::new([226, 152, 186]);
-/// let smile = unsafe { std::str::from_boxed_utf8_unchecked(smile_utf8) };
-///
-/// assert_eq!("☺", &*smile);
-/// ```
-#[must_use]
-#[inline]
-pub unsafe fn from_boxed_utf8_unchecked(v: Box<[u8]>) -> Box<str> {
-    unsafe { Box::from_raw(Box::into_raw(v) as *mut str) }
-}
-
 /// Converts the bytes while the bytes are still ascii.
 /// For better average performance, this is happens in chunks of `2*size_of::<usize>()`.
 /// Returns a vec with the converted bytes.
@@ -1086,3 +1014,62 @@ fn convert_while_ascii(b: &[u8], convert: fn(&u8) -> u8) -> Vec<u8> {
 
     out
 }
+
+#[inline(never)]
+#[cold]
+#[track_caller]
+#[rustc_allow_const_fn_unstable(const_eval_select)]
+const fn slice_error_fail(s: &u32str, begin: usize, end: usize) -> ! {
+    // SAFETY: panics for both branches
+    unsafe {
+        core::intrinsics::const_eval_select(
+            (s, begin, end),
+            slice_error_fail_ct,
+            slice_error_fail_rt,
+        )
+    }
+}
+
+const fn slice_error_fail_ct(_: &u32str, _: usize, _: usize) -> ! {
+    panic!("failed to slice string");
+}
+
+fn slice_error_fail_rt(s: &u32str, begin: usize, end: usize) -> ! {
+    panic!("Not implemented");
+    // TODO: Enable the code below
+    // const MAX_DISPLAY_LENGTH: usize = 256;
+    // let trunc_len = s.floor_char_boundary(MAX_DISPLAY_LENGTH);
+    // let s_trunc = &s[..trunc_len];
+    // let ellipsis = if trunc_len < s.len() { "[...]" } else { "" };
+    //
+    // // 1. out of bounds
+    // if begin > s.len() || end > s.len() {
+    //     let oob_index = if begin > s.len() { begin } else { end };
+    //     panic!("byte index {oob_index} is out of bounds of `{s_trunc}`{ellipsis}");
+    // }
+    //
+    // // 2. begin <= end
+    // assert!(
+    //     begin <= end,
+    //     "begin <= end ({} <= {}) when slicing `{}`{}",
+    //     begin,
+    //     end,
+    //     s_trunc,
+    //     ellipsis
+    // );
+    //
+    // // 3. character boundary
+    // let index = if !s.is_char_boundary(begin) { begin } else { end };
+    // // find the character
+    // let char_start = s.floor_char_boundary(index);
+    // // `char_start` must be less than len and a char boundary
+    // let ch = s[char_start..].chars().next().unwrap();
+    // let char_range = char_start..char_start + ch.len_utf8();
+    // panic!(
+    //     "byte index {} is not a char boundary; it is inside {:?} (bytes {:?}) of `{}`{}",
+    //     index, ch, char_range, s_trunc, ellipsis
+    // );
+}
+
+mod hash;
+mod index;

@@ -1773,28 +1773,28 @@ impl U32String {
     //     unsafe { self.as_mut_vec() }.splice((start, end), replace_with.bytes());
     // }
 
-    // /// Converts this `U32String` into a <code>[Box]<[str]></code>.
-    // ///
-    // /// This will drop any excess capacity.
-    // ///
-    // /// [str]: prim@str "str"
-    // ///
-    // /// # Examples
-    // ///
-    // /// Basic usage:
-    // ///
-    // /// ```
-    // /// let s = U32String::from("hello");
-    // ///
-    // /// let b = s.into_boxed_str();
-    // /// ```
-    // #[cfg(not(no_global_oom_handling))]
-    // #[must_use = "`self` will be dropped if the result is not used"]
-    // #[inline]
-    // pub fn into_boxed_str(self) -> Box<str> {
-    //     let slice = self.vec.into_boxed_slice();
-    //     unsafe { from_boxed_utf8_unchecked(slice) }
-    // }
+    /// Converts this `U32String` into a <code>[Box]<[str]></code>.
+    ///
+    /// This will drop any excess capacity.
+    ///
+    /// [str]: prim@str "str"
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// let s = U32String::from("hello");
+    ///
+    /// let b = s.into_boxed_str();
+    /// ```
+    #[cfg(not(no_global_oom_handling))]
+    #[must_use = "`self` will be dropped if the result is not used"]
+    #[inline]
+    pub fn into_boxed_u32str(self) -> Box<u32str> {
+        let slice = self.vec.into_boxed_slice();
+        unsafe { u32str::from_boxed_chars(slice) }
+    }
 }
 
 impl FromUtf8Error {
@@ -2398,7 +2398,7 @@ impl<T: fmt::Display + ?Sized> ToU32String for T {
 impl ToU32String for char {
     #[inline]
     fn to_string(&self) -> U32String {
-        U32String::from(self)
+        U32String::from(*self)
     }
 }
 
@@ -2522,27 +2522,29 @@ impl From<&U32String> for U32String {
     }
 }
 
-// note: test pulls in libstd, which causes errors here
-#[cfg(not(test))]
-impl From<Box<u32str>> for U32String {
-    /// Converts the given boxed `str` slice to a [`U32String`].
-    /// It is notable that the `str` slice is owned.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let s1: U32String = U32String::from("hello world");
-    /// let s2: Box<str> = s1.into_boxed_str();
-    /// let s3: U32String = U32String::from(s2);
-    ///
-    /// assert_eq!("hello world", s3)
-    /// ```
-    fn from(s: Box<u32str>) -> U32String {
-        s.into_string()
-    }
-}
+// TODO: Implement
+// // note: test pulls in libstd, which causes errors here
+// #[cfg(not(test))]
+// impl From<Box<u32str>> for U32String {
+//     /// Converts the given boxed `str` slice to a [`U32String`].
+//     /// It is notable that the `str` slice is owned.
+//     ///
+//     /// # Examples
+//     ///
+//     /// Basic usage:
+//     ///
+//     /// ```
+//     /// let s1: U32String = U32String::from("hello world");
+//     /// let s2: Box<str> = s1.into_boxed_str();
+//     /// let s3: U32String = U32String::from(s2);
+//     ///
+//     /// assert_eq!("hello world", s3)
+//     /// ```
+//     fn from(s: Box<u32str>) -> U32String {
+//
+//         s.into_string()
+//     }
+// }
 
 #[cfg(not(no_global_oom_handling))]
 impl From<U32String> for Box<u32str> {
@@ -2560,7 +2562,7 @@ impl From<U32String> for Box<u32str> {
     /// assert_eq!("hello world", s3)
     /// ```
     fn from(s: U32String) -> Box<u32str> {
-        s.into_boxed_str()
+        s.into_boxed_u32str()
     }
 }
 
@@ -2646,7 +2648,7 @@ impl<'a> From<&'a U32String> for Cow<'a, u32str> {
     /// [`Borrowed`]: crate::borrow::Cow::Borrowed "borrow::Cow::Borrowed"
     #[inline]
     fn from(s: &'a U32String) -> Cow<'a, u32str> {
-        Cow::Borrowed(s.as_str())
+        Cow::Borrowed(s.as_u32str())
     }
 }
 
@@ -2672,25 +2674,26 @@ impl<'a> FromIterator<U32String> for Cow<'a, u32str> {
     }
 }
 
-impl From<U32String> for Vec<u8> {
-    /// Converts the given [`U32String`] to a vector [`Vec`] that holds values of type [`u8`].
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let s1 = U32String::from("hello world");
-    /// let v1 = Vec::from(s1);
-    ///
-    /// for b in v1 {
-    ///     println!("{b}");
-    /// }
-    /// ```
-    fn from(string: U32String) -> Vec<u8> {
-        string.into_bytes()
-    }
-}
+// TODO: Implement
+// impl From<U32String> for Vec<u8> {
+//     /// Converts the given [`U32String`] to a vector [`Vec`] that holds values of type [`u8`].
+//     ///
+//     /// # Examples
+//     ///
+//     /// Basic usage:
+//     ///
+//     /// ```
+//     /// let s1 = U32String::from("hello world");
+//     /// let v1 = Vec::from(s1);
+//     ///
+//     /// for b in v1 {
+//     ///     println!("{b}");
+//     /// }
+//     /// ```
+//     fn from(string: U32String) -> Vec<u8> {
+//         string.into_bytes()
+//     }
+// }
 
 #[cfg(not(no_global_oom_handling))]
 impl fmt::Write for U32String {
@@ -2815,6 +2818,6 @@ impl From<char> for U32String {
     /// ```
     #[inline]
     fn from(c: char) -> Self {
-        c.to_string()
+        U32String::from(c)
     }
 }
