@@ -1,4 +1,8 @@
 #![feature(const_eval_select)]
+#![feature(const_mut_refs)]
+#![feature(const_ops)]
+#![feature(const_slice_from_raw_parts)]
+#![feature(const_slice_ptr_len)]
 #![feature(const_trait_impl)]
 #![feature(extend_one)]
 #![feature(fmt_internals)]

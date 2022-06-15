@@ -450,17 +450,36 @@ unsafe impl const SliceIndex<u32str> for ops::RangeToInclusive<usize> {
     }
 }
 
+struct LocalRangeInclusive<Idx> {
+    // Note that the fields here are not public to allow changing the
+    // representation in the future; in particular, while we could plausibly
+    // expose start/end, modifying them without changing (future/current)
+    // private fields may lead to incorrect behavior, so we don't want to
+    // support that mode.
+    pub(crate) start: Idx,
+    pub(crate) end: Idx,
+
+    // This field is:
+    //  - `false` upon construction
+    //  - `false` when iteration has yielded an element and the iterator is not exhausted
+    //  - `true` when iteration has been used to exhaust the iterator
+    //
+    // This is required to support PartialEq and Hash without a PartialOrd bound or specialization.
+    pub(crate) exhausted: bool,
+}
+
 // Copied from core::src::ops::range because the function was made private to that crate...
 #[inline]
 pub(crate) const fn into_slice_range(range: ops::RangeInclusive<usize>) -> ops::Range<usize> {
+    let range: LocalRangeInclusive<usize> = unsafe { std::mem::transmute(range) };
     // If we're not exhausted, we want to simply slice `start..end + 1`.
     // If we are exhausted, then slicing with `end + 1..end + 1` gives us an
     // empty range that is still subject to bounds-checks for that endpoint.
-    let exclusive_end = range.end() + 1;
-    let start = if range.is_empty() {
+    let exclusive_end = range.end + 1;
+    let start = if range.exhausted {
         exclusive_end
     } else {
-        *range.start()
+        range.start
     };
     start..exclusive_end
 }
