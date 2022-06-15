@@ -32,10 +32,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "u32_string"
+name = "u32_macros"
 version = "0.1.0"
 dependencies = [
  "syn",
+]
+
+[[package]]
+name = "u32_string"
+version = "0.1.0"
+dependencies = [
+ "u32_macros",
 ]
 
 [[package]]

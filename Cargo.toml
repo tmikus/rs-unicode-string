@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "u32_macros",
     "u32_string",
     "u32_string_tests"
 ]

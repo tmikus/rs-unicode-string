@@ -60,7 +60,6 @@ pub use core::str::{Matches, RMatches};
 pub use core::str::{RSplit, Split};
 pub use core::str::{RSplitN, SplitN};
 pub use core::str::{RSplitTerminator, SplitTerminator};
-use proc_macro::TokenStream;
 use std::fmt::Write;
 
 use crate::u32_string::U32String;
@@ -236,7 +235,7 @@ impl ToOwned for u32str {
 }
 
 /// Methods for string slices.
-#[cfg(not(test))]
+// #[cfg(not(test))]
 impl u32str {
     /// Returns the length of a str
     ///
@@ -253,25 +252,6 @@ impl u32str {
     #[inline]
     pub const fn len(&self) -> usize {
         self.data.len()
-    }
-
-    /// Converts a boxed slice of chars to a boxed u32 string slice without checking
-    /// that the string contains valid UTF-8.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// let smile_chars = Box::new(['s', 'm', 'i', 'l', 'e']);
-    /// let smile = unsafe { from_boxed_chars(smile_chars) };
-    ///
-    /// assert_eq!("smile", &*smile);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub unsafe fn from_boxed_chars(v: Box<[char]>) -> Box<u32str> {
-        unsafe { Box::from_raw(Box::into_raw(v) as *mut u32str) }
     }
 
     // /// Converts a `Box<str>` into a `Box<[u8]>` without copying or allocating.
@@ -771,6 +751,25 @@ impl u32str {
     //         Err(err) => Err(err),
     //     }
     // }
+
+    /// Converts a boxed slice of chars to a boxed u32 string slice without checking
+    /// that the string contains valid UTF-8.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// let smile_chars = Box::new(['s', 'm', 'i', 'l', 'e']);
+    /// let smile = unsafe { from_boxed_chars(smile_chars) };
+    ///
+    /// assert_eq!("smile", &*smile);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub unsafe fn from_boxed_chars(v: Box<[char]>) -> Box<u32str> {
+        unsafe { Box::from_raw(Box::into_raw(v) as *mut u32str) }
+    }
 
     /// Converts a slice of bytes to a string slice without checking
     /// that the string contains valid UTF-8.

@@ -1,5 +1,5 @@
 [package]
-name = "u32_string"
+name = "u32_macros"
 version = "0.1.0"
 edition = "2021"
 authors = [
@@ -8,9 +8,8 @@ authors = [
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-#[lib]
-#proc-macro = true
+[lib]
+proc-macro = true
 
 [dependencies]
-u32_macros = { path = "../u32_macros" }
-#syn = "1.0.96"
+syn = "1.0.96"

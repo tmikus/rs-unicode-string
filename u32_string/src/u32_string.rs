@@ -60,7 +60,7 @@ use core::slice;
 use core::str::lossy;
 use core::str::pattern::Pattern;
 
-use crate::u32str::u32str;
+use crate::u32str;
 #[cfg(not(no_global_oom_handling))]
 use std::borrow::{Cow, ToOwned};
 use std::boxed::Box;
@@ -1793,7 +1793,7 @@ impl U32String {
     #[inline]
     pub fn into_boxed_u32str(self) -> Box<u32str> {
         let slice = self.vec.into_boxed_slice();
-        unsafe { u32str::from_boxed_chars(slice) }
+        unsafe { crate::u32str::from_boxed_chars(slice) }
     }
 }
 
@@ -2294,7 +2294,7 @@ impl ops::IndexMut<ops::RangeFrom<usize>> for U32String {
 impl ops::IndexMut<ops::RangeFull> for U32String {
     #[inline]
     fn index_mut(&mut self, _index: ops::RangeFull) -> &mut u32str {
-        unsafe { u32str::from_char_unchecked_mut(&mut *self.vec) }
+        unsafe { crate::u32str::from_char_unchecked_mut(&mut *self.vec) }
         // unsafe { str::from_utf8_unchecked_mut(&mut *self.vec) }
         // &mut self
     }
