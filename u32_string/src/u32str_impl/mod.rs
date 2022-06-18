@@ -26,8 +26,6 @@
 //! let hello_world: &'static str = "Hello, world!";
 //! ```
 pub struct u32str {
-    // Raw pointer because it's easier for the users not to have to deal with the lifecycles
-    // of the u32str type
     pub(crate) data: [char],
 }
 
@@ -60,6 +58,7 @@ pub use core::str::{Matches, RMatches};
 pub use core::str::{RSplit, Split};
 pub use core::str::{RSplitN, SplitN};
 pub use core::str::{RSplitTerminator, SplitTerminator};
+use std::alloc::Allocator;
 use std::fmt::Write;
 
 use crate::u32_string::U32String;
@@ -81,7 +80,7 @@ impl<S: Borrow<u32str>> Join<&u32str> for [S] {
     type Output = U32String;
 
     fn join(slice: &Self, sep: &u32str) -> U32String {
-        unsafe { U32String::from_chars(join_generic_copy(slice, &sep.data)) }
+        unsafe { U32String::from(join_generic_copy(slice, &sep.data)) }
     }
 }
 
@@ -532,6 +531,29 @@ impl u32str {
     //     let slice = Box::<[u8]>::from(self);
     //     unsafe { String::from_utf8_unchecked(slice.into_vec()) }
     // }
+
+    /// Converts a [`Box<str>`] into a [`U32String`] without copying or allocating.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use u32_string::U32String;
+    ///
+    /// let string = U32String::from("birthday gift");
+    /// let boxed_str = string.clone().into_boxed_u32str();
+    ///
+    /// assert_eq!(boxed_str.into_u32string(), string);
+    /// ```
+    #[rustc_allow_incoherent_impl]
+    #[must_use = "`self` will be dropped if the result is not used"]
+    #[inline]
+    pub fn into_u32string(self: Box<u32str>) -> U32String {
+        let boxed_data = convert_box_str_to_char_array(self);
+        U32String::from(boxed_data.into_vec())
+    }
+
     //
     // /// Creates a new [`String`] by repeating a string `n` times.
     // ///
@@ -1070,5 +1092,28 @@ fn slice_error_fail_rt(s: &u32str, begin: usize, end: usize) -> ! {
     // );
 }
 
+/// Converts a `Box<str>` into a `Box<[u8]>`
+///
+/// This conversion does not allocate on the heap and happens in place.
+///
+/// # Examples
+/// ```rust
+/// // create a Box<str> which will be used to create a Box<[u8]>
+/// let boxed: Box<str> = Box::from("hello");
+/// let boxed_str: Box<[u8]> = Box::from(boxed);
+///
+/// // create a &[u8] which will be used to create a Box<[u8]>
+/// let slice: &[u8] = &[104, 101, 108, 108, 111];
+/// let boxed_slice = Box::from(slice);
+///
+/// assert_eq!(boxed_slice, boxed_str);
+/// ```
+#[inline]
+pub(crate) fn convert_box_str_to_char_array<A: Allocator>(s: Box<u32str, A>) -> Box<[char], A> {
+    let (raw, alloc) = Box::into_raw_with_allocator(s);
+    unsafe { Box::from_raw_in(raw as *mut [char], alloc) }
+}
+
 mod hash;
 mod index;
+mod into;
