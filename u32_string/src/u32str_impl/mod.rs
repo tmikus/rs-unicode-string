@@ -43,6 +43,7 @@ use std::slice::{Concat, Join, SliceIndex};
 use std::string::String;
 use std::vec::Vec;
 
+use crate::U32String;
 pub use core::str::pattern;
 pub use core::str::EncodeUtf16;
 pub use core::str::SplitAsciiWhitespace;
@@ -60,8 +61,6 @@ pub use core::str::{RSplitN, SplitN};
 pub use core::str::{RSplitTerminator, SplitTerminator};
 use std::alloc::Allocator;
 use std::fmt::Write;
-
-use crate::u32_string::U32String;
 
 /// Note: `str` in `Concat<str>` is not meaningful here.
 /// This type parameter of the trait only exists to enable another impl.
@@ -782,8 +781,10 @@ impl u32str {
     /// Basic usage:
     ///
     /// ```
+    /// use u32_string::u32str;
+    ///
     /// let smile_chars = Box::new(['s', 'm', 'i', 'l', 'e']);
-    /// let smile = unsafe { from_boxed_chars(smile_chars) };
+    /// let smile = unsafe { u32str::from_boxed_chars(smile_chars) };
     ///
     /// assert_eq!("smile", &*smile);
     /// ```
@@ -929,6 +930,10 @@ impl const Default for &u32str {
     }
 }
 
+// impl From<[char]> for &u32str {
+//     fn from(value: [char]) -> Self {}
+// }
+
 // TODO: Implement this
 // impl Default for &mut u32str {
 //     /// Creates an empty mutable str
@@ -941,40 +946,6 @@ impl const Default for &u32str {
 //         }
 //     }
 // }
-
-impl Ord for u32str {
-    #[inline]
-    fn cmp(&self, other: &u32str) -> std::cmp::Ordering {
-        self.data.cmp(&other.data)
-    }
-}
-
-impl PartialEq for u32str {
-    #[inline]
-    fn eq(&self, other: &u32str) -> bool {
-        self.data == other.data
-    }
-    #[inline]
-    fn ne(&self, other: &u32str) -> bool {
-        !(*self).eq(other)
-    }
-}
-
-impl Eq for u32str {}
-
-/// Implements comparison operations on strings.
-///
-/// Strings are compared [lexicographically](Ord#lexicographical-comparison) by their byte values. This compares Unicode code
-/// points based on their positions in the code charts. This is not necessarily the same as
-/// "alphabetical" order, which varies by language and locale. Comparing strings according to
-/// culturally-accepted standards requires locale-specific data that is outside the scope of
-/// the `str` type.
-impl PartialOrd for u32str {
-    #[inline]
-    fn partial_cmp(&self, other: &u32str) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
 
 impl std::fmt::Debug for u32str {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -1114,6 +1085,7 @@ pub(crate) fn convert_box_str_to_char_array<A: Allocator>(s: Box<u32str, A>) -> 
     unsafe { Box::from_raw_in(raw as *mut [char], alloc) }
 }
 
+mod cmp;
 mod hash;
 mod index;
 mod into;

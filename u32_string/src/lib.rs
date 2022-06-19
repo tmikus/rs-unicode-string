@@ -21,9 +21,9 @@
 #![feature(vec_into_raw_parts)]
 #![feature(allocator_api)]
 
-mod u32_string;
 mod u32str_impl;
+mod u32string_impl;
 
-pub use self::u32_string::*;
 pub use self::u32str_impl::*;
+pub use self::u32string_impl::*;
 pub use u32_macros::*;
