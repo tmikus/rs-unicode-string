@@ -25,8 +25,27 @@
 //! ```
 //! let hello_world: &'static str = "Hello, world!";
 //! ```
+/// ```
+/// use u32_string::{u32str, ustr};
+///
+/// let result: &u32str = unsafe {
+///     let data = ['H', 'e', 'l', 'l', 'o', ' ', 'u', 's', 't', 'r', '!'];
+///     // let length = data.len();
+///     // let chars: [char] = std::mem::transmute(data);
+///     // let ptr: u32str = std::mem::transmute(data);
+///     // &*ptr
+///     // std::slice::from_raw_parts(data.as_ptr() as *const u32str, length)
+///     // &*(data.as_ptr() as *const u32str)
+///     &u32str {
+///         data: data.as_ptr(),
+///         length: data.len(),
+///     }
+/// };
+/// assert_eq!(ustr!("Hello ustr!"), result);
+// ```
 pub struct u32str {
-    pub(crate) data: [char],
+    pub data: *const char,
+    pub length: usize,
 }
 
 use core::borrow::{Borrow, BorrowMut};
@@ -79,7 +98,7 @@ impl<S: Borrow<u32str>> Join<&u32str> for [S] {
     type Output = U32String;
 
     fn join(slice: &Self, sep: &u32str) -> U32String {
-        unsafe { U32String::from(join_generic_copy(slice, &sep.data)) }
+        unsafe { U32String::from(join_generic_copy(slice, sep.chars())) }
     }
 }
 
@@ -216,25 +235,24 @@ impl ToOwned for u32str {
 
     #[inline]
     fn to_owned(&self) -> U32String {
-        // TODO: Improve this...
         U32String {
-            vec: self.data.to_vec(),
+            vec: self.chars().to_vec(),
         }
-        // unsafe { U32String::from_utf8_unchecked(self.as_bytes().to_owned()) }
     }
 
     fn clone_into(&self, target: &mut U32String) {
-        // TODO: Check if this work...
-        target.vec = self.data.to_vec()
-        // let mut b = mem::take(target).into_bytes();
-        // self.as_bytes().clone_into(&mut b);
-        // *target = unsafe { U32String::from_utf8_unchecked(b) }
+        target.vec = self.chars().to_vec();
     }
 }
 
 /// Methods for string slices.
 // #[cfg(not(test))]
 impl u32str {
+    #[inline]
+    pub const fn chars(&self) -> &[char] {
+        unsafe { std::slice::from_raw_parts(self.data, self.length) }
+    }
+
     /// Returns the length of a str
     ///
     /// The returned value is the number of **elements**, not the number of bytes.
@@ -249,7 +267,7 @@ impl u32str {
     /// ```
     #[inline]
     pub const fn len(&self) -> usize {
-        self.data.len()
+        self.length
     }
 
     // /// Converts a `Box<str>` into a `Box<[u8]>` without copying or allocating.
@@ -824,7 +842,11 @@ impl u32str {
     pub const unsafe fn from_char_unchecked(v: &[char]) -> &u32str {
         // SAFETY: the caller must guarantee that the bytes `v` are valid UTF-8.
         // Also relies on `&u32str` and `&[char]` having the same layout.
-        unsafe { mem::transmute(v) }
+        // unsafe { mem::transmute(v) }
+        &u32str {
+            data: v.as_ptr(),
+            length: v.len(),
+        }
     }
 
     /// Converts a slice of bytes to a string slice without checking
@@ -918,7 +940,8 @@ impl u32str {
 impl AsRef<[char]> for u32str {
     #[inline]
     fn as_ref(&self) -> &[char] {
-        &self.data
+        // &self.data
+        self.chars()
     }
 }
 
@@ -949,13 +972,13 @@ impl const Default for &u32str {
 
 impl std::fmt::Debug for u32str {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", &String::from_iter(self.data.iter()))
+        write!(f, "{}", &String::from_iter(self.chars().iter()))
     }
 }
 
 impl std::fmt::Display for u32str {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        f.pad(&String::from_iter(self.data.iter()))
+        f.pad(&String::from_iter(self.chars().iter()))
     }
 }
 
