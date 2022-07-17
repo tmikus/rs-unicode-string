@@ -30,22 +30,13 @@
 ///
 /// let result: &u32str = unsafe {
 ///     let data = ['H', 'e', 'l', 'l', 'o', ' ', 'u', 's', 't', 'r', '!'];
-///     // let length = data.len();
-///     // let chars: [char] = std::mem::transmute(data);
-///     // let ptr: u32str = std::mem::transmute(data);
-///     // &*ptr
-///     // std::slice::from_raw_parts(data.as_ptr() as *const u32str, length)
-///     // &*(data.as_ptr() as *const u32str)
-///     &u32str {
-///         data: data.as_ptr(),
-///         length: data.len(),
-///     }
+///     std::mem::transmute(data.as_ref())
 /// };
 /// assert_eq!(ustr!("Hello ustr!"), result);
 // ```
+#[repr(C)]
 pub struct u32str {
-    pub data: *const char,
-    pub length: usize,
+    chars: [char],
 }
 
 use core::borrow::{Borrow, BorrowMut};
@@ -250,7 +241,8 @@ impl ToOwned for u32str {
 impl u32str {
     #[inline]
     pub const fn chars(&self) -> &[char] {
-        unsafe { std::slice::from_raw_parts(self.data, self.length) }
+        &self.chars
+        // unsafe { std::slice::from_raw_parts(self.data, self.length) }
     }
 
     /// Returns the length of a str
@@ -267,7 +259,7 @@ impl u32str {
     /// ```
     #[inline]
     pub const fn len(&self) -> usize {
-        self.length
+        self.chars.len()
     }
 
     // /// Converts a `Box<str>` into a `Box<[u8]>` without copying or allocating.
@@ -799,12 +791,12 @@ impl u32str {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::u32str;
+    /// use u32_string::{u32str, ustr};
     ///
     /// let smile_chars = Box::new(['s', 'm', 'i', 'l', 'e']);
     /// let smile = unsafe { u32str::from_boxed_chars(smile_chars) };
     ///
-    /// assert_eq!("smile", &*smile);
+    /// assert_eq!(ustr!("smile"), &*smile);
     /// ```
     #[must_use]
     #[inline]
@@ -842,11 +834,11 @@ impl u32str {
     pub const unsafe fn from_char_unchecked(v: &[char]) -> &u32str {
         // SAFETY: the caller must guarantee that the bytes `v` are valid UTF-8.
         // Also relies on `&u32str` and `&[char]` having the same layout.
-        // unsafe { mem::transmute(v) }
-        &u32str {
-            data: v.as_ptr(),
-            length: v.len(),
-        }
+        unsafe { mem::transmute(v) }
+        // &u32str {
+        //     data: v.as_ptr(),
+        //     length: v.len(),
+        // }
     }
 
     /// Converts a slice of bytes to a string slice without checking
@@ -1105,7 +1097,10 @@ fn slice_error_fail_rt(s: &u32str, begin: usize, end: usize) -> ! {
 #[inline]
 pub(crate) fn convert_box_str_to_char_array<A: Allocator>(s: Box<u32str, A>) -> Box<[char], A> {
     let (raw, alloc) = Box::into_raw_with_allocator(s);
-    unsafe { Box::from_raw_in(raw as *mut [char], alloc) }
+    unsafe {
+        let data = ptr::slice_from_raw_parts_mut((*raw).chars.as_mut_ptr(), (*raw).chars.len());
+        Box::from_raw_in(data, alloc)
+    }
 }
 
 mod cmp;

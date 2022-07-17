@@ -30,8 +30,7 @@ impl ops::Index<ops::RangeFull> for U32String {
 
     #[inline]
     fn index(&self, _index: ops::RangeFull) -> &u32str {
-        // unsafe { str::from_utf8_unchecked(&self.vec) }
-        &self[..]
+        &self
     }
 }
 impl ops::Index<ops::RangeInclusive<usize>> for U32String {
@@ -72,9 +71,7 @@ impl ops::IndexMut<ops::RangeFrom<usize>> for U32String {
 impl ops::IndexMut<ops::RangeFull> for U32String {
     #[inline]
     fn index_mut(&mut self, _index: ops::RangeFull) -> &mut u32str {
-        unsafe { crate::u32str::from_char_unchecked_mut(&mut *self.vec) }
-        // unsafe { str::from_utf8_unchecked_mut(&mut *self.vec) }
-        // &mut self
+        unsafe { u32str::from_char_unchecked_mut(&mut *self.vec) }
     }
 }
 impl ops::IndexMut<ops::RangeInclusive<usize>> for U32String {

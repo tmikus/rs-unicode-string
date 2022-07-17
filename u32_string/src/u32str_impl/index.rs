@@ -137,22 +137,24 @@ unsafe impl const SliceIndex<u32str> for ops::Range<usize> {
             None
         }
     }
+
     #[inline]
     unsafe fn get_unchecked(self, slice: *const u32str) -> *const Self::Output {
-        let slice = core::slice::from_raw_parts((*slice).data.as_ptr(), (*slice).data.len())
-            as *const [char];
+        let slice =
+            core::slice::from_raw_parts((*slice).chars.as_ptr(), (*slice).chars.len()).as_ptr();
         // SAFETY: the caller guarantees that `self` is in bounds of `slice`
         // which satisfies all the conditions for `add`.
-        let ptr = unsafe { slice.as_ptr().add(self.start) };
+        let ptr = slice.add(self.start);
         let len = self.end - self.start;
         ptr::slice_from_raw_parts(ptr, len) as *const u32str
     }
+
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut u32str) -> *mut Self::Output {
-        let slice = core::slice::from_raw_parts_mut((*slice).data.as_mut_ptr(), (*slice).data.len())
-            as *mut [char];
         // SAFETY: see comments for `get_unchecked`.
-        let ptr = unsafe { slice.as_mut_ptr().add(self.start) };
+        let slice =
+            core::slice::from_raw_parts_mut((*slice).chars.as_mut_ptr(), (*slice).chars.len());
+        let ptr = slice.as_mut_ptr().add(self.start);
         let len = self.end - self.start;
         ptr::slice_from_raw_parts_mut(ptr, len) as *mut u32str
     }
@@ -221,15 +223,15 @@ unsafe impl const SliceIndex<u32str> for ops::RangeTo<usize> {
     }
     #[inline]
     unsafe fn get_unchecked(self, slice: *const u32str) -> *const Self::Output {
-        let slice = slice as *const [char];
-        let ptr = slice.as_ptr();
-        ptr::slice_from_raw_parts(ptr, self.end) as *const u32str
+        // let slice = slice as *const [char];
+        // let ptr = slice.as_ptr();
+        ptr::slice_from_raw_parts((*slice).chars.as_ptr(), self.end) as *const u32str
     }
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut u32str) -> *mut Self::Output {
-        let slice = slice as *mut [char];
-        let ptr = slice.as_mut_ptr();
-        ptr::slice_from_raw_parts_mut(ptr, self.end) as *mut u32str
+        // let slice = slice as *mut [char];
+        // let ptr = slice.as_mut_ptr();
+        ptr::slice_from_raw_parts_mut((*slice).chars.as_mut_ptr(), self.end) as *mut u32str
     }
     #[inline]
     fn index(self, slice: &u32str) -> &Self::Output {
@@ -293,19 +295,19 @@ unsafe impl const SliceIndex<u32str> for ops::RangeFrom<usize> {
     }
     #[inline]
     unsafe fn get_unchecked(self, slice: *const u32str) -> *const Self::Output {
-        let slice = slice as *const [char];
+        let slice_data = (*slice).chars.as_ptr();
         // SAFETY: the caller guarantees that `self` is in bounds of `slice`
         // which satisfies all the conditions for `add`.
-        let ptr = unsafe { slice.as_ptr().add(self.start) };
-        let len = slice.len() - self.start;
+        let ptr = unsafe { slice_data.add(self.start) };
+        let len = (*slice).chars.len() - self.start;
         ptr::slice_from_raw_parts(ptr, len) as *const u32str
     }
     #[inline]
     unsafe fn get_unchecked_mut(self, slice: *mut u32str) -> *mut Self::Output {
-        let slice = slice as *mut [char];
+        let slice_data = (*slice).chars.as_mut_ptr();
         // SAFETY: identical to `get_unchecked`.
-        let ptr = unsafe { slice.as_mut_ptr().add(self.start) };
-        let len = slice.len() - self.start;
+        let ptr = unsafe { slice_data.add(self.start) };
+        let len = (*slice).chars.len() - self.start;
         ptr::slice_from_raw_parts_mut(ptr, len) as *mut u32str
     }
     #[inline]

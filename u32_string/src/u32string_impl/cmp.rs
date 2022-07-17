@@ -4,10 +4,12 @@ use std::borrow::Cow;
 impl PartialEq for U32String {
     #[inline]
     fn eq(&self, other: &U32String) -> bool {
+        println!("U32String.eq");
         PartialEq::eq(&self[..], &other[..])
     }
     #[inline]
     fn ne(&self, other: &U32String) -> bool {
+        println!("U32String.ne");
         PartialEq::ne(&self[..], &other[..])
     }
 }
@@ -18,10 +20,12 @@ macro_rules! impl_eq {
         impl<'a, 'b> PartialEq<$rhs> for $lhs {
             #[inline]
             fn eq(&self, other: &$rhs) -> bool {
+                println!("U32String.eq");
                 PartialEq::eq(&self[..], &other[..])
             }
             #[inline]
             fn ne(&self, other: &$rhs) -> bool {
+                println!("U32String.ne");
                 PartialEq::ne(&self[..], &other[..])
             }
         }
@@ -30,10 +34,12 @@ macro_rules! impl_eq {
         impl<'a, 'b> PartialEq<$lhs> for $rhs {
             #[inline]
             fn eq(&self, other: &$lhs) -> bool {
+                println!("U32String.eq");
                 PartialEq::eq(&self[..], &other[..])
             }
             #[inline]
             fn ne(&self, other: &$lhs) -> bool {
+                println!("U32String.ne");
                 PartialEq::ne(&self[..], &other[..])
             }
         }

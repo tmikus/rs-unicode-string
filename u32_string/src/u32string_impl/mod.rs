@@ -32,6 +32,7 @@
 //! it. You can do the reverse too.
 //!
 //! ```
+//! use u32_macros::ustr;
 //! use u32_string::U32String;
 //!
 //! let sparkle_heart = vec![240, 159, 146, 150];
@@ -39,7 +40,7 @@
 //! // We know these bytes are valid, so we'll use `unwrap()`.
 //! let sparkle_heart = U32String::from_utf8(sparkle_heart).unwrap();
 //!
-//! assert_eq!("💖", sparkle_heart);
+//! assert_eq!(ustr!("💖"), sparkle_heart);
 //!
 //! let bytes = sparkle_heart.into_bytes();
 //!
@@ -113,14 +114,14 @@ use std::vec::Vec;
 ///
 /// ```
 /// // some bytes, in a vector
-/// use u32_string::U32String;
+/// use u32_string::{U32String, ustr};
 ///
 /// let sparkle_heart = vec![240, 159, 146, 150];
 ///
 /// // We know these bytes are valid, so we'll use `unwrap()`.
 /// let sparkle_heart = U32String::from_utf8(sparkle_heart).unwrap();
 ///
-/// assert_eq!("💖", sparkle_heart);
+/// assert_eq!(ustr!("💖"), sparkle_heart);
 /// ```
 ///
 /// [`from_utf8`]: U32String::from_utf8
@@ -483,7 +484,7 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// // some bytes, in a vector
     /// let sparkle_heart = vec![240, 159, 146, 150];
@@ -491,7 +492,7 @@ impl U32String {
     /// // We know these bytes are valid, so we'll use `unwrap()`.
     /// let sparkle_heart = U32String::from_utf8(sparkle_heart).unwrap();
     ///
-    /// assert_eq!("💖", sparkle_heart);
+    /// assert_eq!(ustr!("💖"), sparkle_heart);
     /// ```
     ///
     /// Incorrect bytes:
@@ -516,7 +517,7 @@ impl U32String {
     pub fn from_utf8(vec: Vec<u8>) -> Result<U32String, FromUtf8Error> {
         // TODO: Improve performance of this
         // https://trello.com/c/DCIsf6DI/1-improve-the-performance-of-the-u32stringfromutf8
-        match str::from_utf8(&vec) {
+        match std::str::from_utf8(&vec) {
             Ok(v) => Ok(U32String {
                 vec: v.chars().collect(),
             }),
@@ -698,14 +699,14 @@ impl U32String {
     ///
     /// ```
     /// #![feature(vec_into_raw_parts)]
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let s = U32String::from("hello");
     ///
     /// let (ptr, len, cap) = s.into_raw_parts();
     ///
     /// let rebuilt = unsafe { U32String::from_raw_parts(ptr, len, cap) };
-    /// assert_eq!(rebuilt, "hello");
+    /// assert_eq!(rebuilt, ustr!("hello"));
     /// ```
     #[must_use = "`self` will be dropped if the result is not used"]
     pub fn into_raw_parts(self) -> (*mut char, usize, usize) {
@@ -745,7 +746,7 @@ impl U32String {
     /// unsafe {
     ///     let s = U32String::from("hello");
     ///
-    // FIXME Update this when vec_into_raw_parts is stabilized
+    ///     // FIXME Update this when vec_into_raw_parts is stabilized
     ///     // Prevent automatically dropping the U32String's data
     ///     let mut s = mem::ManuallyDrop::new(s);
     ///
@@ -828,11 +829,11 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let s = U32String::from("foo");
     ///
-    /// assert_eq!("foo", s.as_str());
+    /// assert_eq!(ustr!("foo"), s.as_u32str());
     /// ```
     #[inline]
     #[must_use]
@@ -849,14 +850,14 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("foobar");
-    /// let s_mut_str = s.as_mut_str();
+    /// let s_mut_str = s.as_mut_u32str();
     ///
     /// s_mut_str.make_ascii_uppercase();
     ///
-    /// assert_eq!("FOOBAR", s_mut_str);
+    /// assert_eq!(ustr!("FOOBAR"), s_mut_str);
     /// ```
     #[inline]
     #[must_use]
@@ -873,13 +874,13 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("foo");
     ///
     /// s.push_str("bar");
     ///
-    /// assert_eq!("foobar", s);
+    /// assert_eq!(ustr!("foobar"), s);
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
@@ -896,18 +897,18 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("foo");
     ///
     /// s.push_str("bar");
     ///
-    /// assert_eq!("foobar", s);
+    /// assert_eq!(ustr!("foobar"), s);
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
     pub fn push_u32str(&mut self, string: &u32str) {
-        self.vec.extend_from_slice(&string.data)
+        self.vec.extend_from_slice(string.chars());
     }
 
     /// Copies elements from `src` range to the end of the string.
@@ -921,18 +922,18 @@ impl U32String {
     ///
     /// ```
     /// #![feature(string_extend_from_within)]
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut string = U32String::from("abcde");
     ///
     /// string.extend_from_within(2..);
-    /// assert_eq!(string, "abcdecde");
+    /// assert_eq!(string, ustr!("abcdecde"));
     ///
     /// string.extend_from_within(..2);
-    /// assert_eq!(string, "abcdecdeab");
+    /// assert_eq!(string, ustr!("abcdecdeab"));
     ///
     /// string.extend_from_within(4..8);
-    /// assert_eq!(string, "abcdecdeabecde");
+    /// assert_eq!(string, ustr!("abcdecdeabecde"));
     /// ```
     #[cfg(not(no_global_oom_handling))]
     pub fn extend_from_within<R>(&mut self, src: R)
@@ -1203,7 +1204,7 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("abc");
     ///
@@ -1211,7 +1212,7 @@ impl U32String {
     /// s.push('2');
     /// s.push('3');
     ///
-    /// assert_eq!("abc123", s);
+    /// assert_eq!(ustr!("abc123"), s);
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
@@ -1257,13 +1258,13 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("hello");
     ///
     /// s.truncate(2);
     ///
-    /// assert_eq!("he", s);
+    /// assert_eq!(ustr!("he"), s);
     /// ```
     #[inline]
     pub fn truncate(&mut self, new_len: usize) {
@@ -1498,7 +1499,7 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::with_capacity(3);
     ///
@@ -1506,7 +1507,7 @@ impl U32String {
     /// s.insert(1, 'o');
     /// s.insert(2, 'o');
     ///
-    /// assert_eq!("foo", s);
+    /// assert_eq!(ustr!("foo"), s);
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
@@ -1571,21 +1572,19 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("bar");
     ///
-    /// s.insert_str(0, "foo");
+    /// s.insert_u32str(0, ustr!("foo"));
     ///
-    /// assert_eq!("foobar", s);
+    /// assert_eq!(ustr!("foobar"), s);
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[inline]
     pub fn insert_u32str(&mut self, idx: usize, string: &u32str) {
-        // TODO: Do we need this?
-        // assert!(self.is_char_boundary(idx));
         unsafe {
-            self.insert_chars(idx, &string.data);
+            self.insert_chars(idx, string.chars());
         }
     }
 
@@ -1606,17 +1605,17 @@ impl U32String {
     /// Basic usage:
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// let mut s = U32String::from("hello");
     ///
     /// unsafe {
     ///     let vec = s.as_mut_vec();
-    ///     assert_eq!(&[104, 101, 108, 108, 111][..], &vec[..]);
+    ///     assert_eq!(&['h', 'e', 'l', 'l', 'o'][..], &vec[..]);
     ///
     ///     vec.reverse();
     /// }
-    /// assert_eq!(s, "olleh" );
+    /// assert_eq!(s, ustr!("olleh") );
     /// ```
     #[inline]
     pub unsafe fn as_mut_vec(&mut self) -> &mut Vec<char> {
@@ -1683,14 +1682,14 @@ impl U32String {
     /// # Examples
     ///
     /// ```
-    /// use u32_string::U32String;
+    /// use u32_string::{U32String, ustr};
     ///
     /// # fn main() {
     ///
     /// let mut hello = U32String::from("Hello, World!");
     /// let world = hello.split_off(7);
-    /// assert_eq!(hello, "Hello, ");
-    /// assert_eq!(world, "World!");
+    /// assert_eq!(hello, ustr!("Hello, "));
+    /// assert_eq!(world, ustr!("World!"));
     /// # }
     /// ```
     #[cfg(not(no_global_oom_handling))]
@@ -1862,7 +1861,7 @@ impl U32String {
     ///
     /// let s = U32String::from("hello");
     ///
-    /// let b = s.into_boxed_str();
+    /// let b = s.into_boxed_u32str();
     /// ```
     #[cfg(not(no_global_oom_handling))]
     #[must_use = "`self` will be dropped if the result is not used"]

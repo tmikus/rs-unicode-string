@@ -118,14 +118,15 @@ impl From<Box<u32str>> for U32String {
     ///
     /// Basic usage:
     ///
-    /// ```
-    /// use u32_string::U32String;
+    /// ```rust
+    /// use u32_macros::ustr;
+    /// use u32_string::{u32str, U32String};
     ///
     /// let s1: U32String = U32String::from("hello world");
-    /// let s2: Box<str> = s1.into_boxed_str();
+    /// let s2: Box<u32str> = s1.into_boxed_u32str();
     /// let s3: U32String = U32String::from(s2);
     ///
-    /// assert_eq!("hello world", s3)
+    /// assert_eq!(ustr!("hello world"), s3)
     /// ```
     fn from(s: Box<u32str>) -> U32String {
         s.into_u32string()
@@ -179,7 +180,7 @@ impl<'a> From<Cow<'a, u32str>> for U32String {
     /// let cow: Cow<u32str> = Cow::Borrowed(ustr!("eggplant"));
     /// // It will allocate on the heap and copy the string.
     /// let owned: U32String = U32String::from(cow);
-    /// assert_eq!(&owned[..], "eggplant");
+    /// assert_eq!(&owned[..], ustr!("eggplant"));
     /// ```
     fn from(s: Cow<'a, u32str>) -> U32String {
         s.into_owned()
@@ -261,15 +262,16 @@ impl From<char> for U32String {
     ///
     /// # Example
     /// ```rust
+    /// use u32_macros::ustr;
     /// use u32_string::U32String;
     ///
     /// let c: char = 'a';
     /// let s: U32String = U32String::from(c);
-    /// assert_eq!("a", &s[..]);
+    /// assert_eq!(ustr!("a"), &s[..]);
     /// ```
     #[inline]
     fn from(c: char) -> Self {
-        U32String::from(c)
+        U32String::from(vec![c])
     }
 }
 
@@ -280,12 +282,12 @@ impl From<&str> for U32String {
     /// # Examples
     ///
     /// ```rust
+    /// use u32_macros::ustr;
     /// use u32_string::U32String;
     ///
-    /// let text = "example str";
-    /// let u32_text = U32String::from(text);
+    /// let u32_text = U32String::from("example str");
     ///
-    /// assert_eq!(text, u32_text);
+    /// assert_eq!(ustr!("example str"), u32_text);
     /// ```
     #[inline]
     fn from(value: &str) -> U32String {

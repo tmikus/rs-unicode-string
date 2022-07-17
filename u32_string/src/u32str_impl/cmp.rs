@@ -3,10 +3,12 @@ use crate::u32str;
 impl PartialEq for u32str {
     #[inline]
     fn eq(&self, other: &u32str) -> bool {
-        self.data == other.data
+        println!("u32str.eq");
+        self.chars == other.chars
     }
     #[inline]
     fn ne(&self, other: &u32str) -> bool {
+        println!("u32str.ne");
         !(*self).eq(other)
     }
 }
@@ -30,6 +32,6 @@ impl PartialOrd for u32str {
 impl Ord for u32str {
     #[inline]
     fn cmp(&self, other: &u32str) -> std::cmp::Ordering {
-        self.data.cmp(&other.data)
+        self.chars.cmp(&other.chars)
     }
 }
